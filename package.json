@@ -4,6 +4,7 @@
   "description": "",
   "main": "server.js",
   "scripts": {
+    "start": "nodemon server.js",
     "test": "mocha --reporter spec"
   },
   "author": "",
@@ -16,6 +17,7 @@
     "express": "^4.17.1",
     "mocha": "^8.2.1",
     "mysql": "^2.18.1",
+    "nodemon": "^2.0.6",
     "xss": "^1.0.8"
   }
 }

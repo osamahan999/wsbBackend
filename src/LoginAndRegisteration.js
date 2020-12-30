@@ -35,23 +35,37 @@ const registerUser = (username, password, email) => {
 
     const salt = crypto.randomBytes(16).toString('hex');
     const hashedPassword = hash(password, salt);
-
     /**
      * Procedure creates a new user with base amt of money of 15k. 
      */
     const query = "CALL register_user( ?, ?, ?, ?)";
 
-    pool.getConnection((error, connection) => {
-        if (error) return { http_id: 999, message: "Failed to get connection from pool" };
-        else {
-            connection.query(query, [username, hashedPassword, salt, email], (err, results, fields) => {
-                if (err) return { http_id: 400, message: "Failed to register" }; //400 is my failed due to bad data
-                else return { http_id: 200, message: "successful register" };
-            })
-        }
 
-        connection.release();
+    return (new Promise((resolve, reject) => {
+        pool.getConnection((error, connection) => {
+
+            if (error) reject({ http_id: 999, message: "Failed to get connection from pool" });
+            else {
+                connection.query(query, [username, hashedPassword, salt, email], (err, results, fields) => {
+
+
+                    if (err) reject({ http_id: 400, message: "Failed to register" }); //400 is my failed due to bad data
+                    else resolve({ http_id: 200, message: "successful register" });
+
+                })
+            }
+            connection.release();
+        })
+    })).then((json) => {
+        return json;
+    }).catch((err) => {
+        return err;
     })
+
+
+
+
+
 }
 
 /**
@@ -65,17 +79,22 @@ const registerUser = (username, password, email) => {
 const loginUserToken = (token) => {
     const query = "CALL get_user_by_token(?)";
 
-    pool.getConnection((error, connection) => {
-        if (error) return { http_id: 999, message: "Failed to get connection from pool" };
-        else {
-            connection.query(query, token, (err, results, fields) => {
-                if (err || results.length == 0) return { http_id: 400, message: "Not logged in or bad token" };
-                else return { http_id: 200, message: "User found", user: results[0] };
-            })
-        }
+    return new Promise((resolve, reject) => {
+        pool.getConnection((error, connection) => {
+            if (error) reject({ http_id: 999, message: "Failed to get connection from pool" });
+            else {
+                connection.query(query, token, (err, results, fields) => {
+                    if (err) reject({ http_id: 400, message: "Not logged in or bad token" });
+                    else if (results[0].length != 1) reject({ http_id: 400, message: "Not logged in or bad token" });
+                    else resolve({ http_id: 200, message: "User found", user: results[0] });
+                })
+            }
 
-        connection.release();
-    })
+            connection.release();
+        })
+    }).then((result) => { return result })
+        .catch((err) => { return err });
+
 }
 
 
@@ -96,42 +115,48 @@ const loginUserNoToken = (username, password) => {
 
     const query = "SELECT hashed_password, salt, user_id FROM user WHERE username = ?";
 
-    pool.getConnection((error, connection) => {
-        if (error) return { http_id: 999, message: "Failed to get connection from pool" };
-        else {
-            connection.query(query, username, (err, results, fields) => {
-                if (err || results.length == 0) return { http_id: 400, message: "Wrong username or password" };
-                else {
+    return (new Promise((resolve, reject) => {
+        pool.getConnection((error, connection) => {
+            if (error) reject({ http_id: 999, message: "Failed to get connection from pool" });
+            else {
+                connection.query(query, username, (err, results, fields) => {
+                    if (err || results.length == 0) reject({ http_id: 400, message: "Wrong username or password" });
+                    else {
 
-                    let salt = results[0].salt;
-                    let hashedPassword = results[0].hashed_password;
-                    let userId = results[0].user_id;
+                        let salt = results[0].salt;
+                        let hashedPassword = results[0].hashed_password;
+                        let userId = results[0].user_id;
 
-                    if (hashedPassword == hash(password, salt)) {
-                        let token = crypto.randomBytes(64).toString('hex'); //I conjure a 64 byte token from random bytes
-
-
-                        let query = "CALL new_login_token(?, ?)";
-
-                        connection.query(query, [userId, token], (err, results, fields) => {
-                            if (err) return { http_id: 400, message: "token add failed" }
-                        })
+                        if (hashedPassword == hash(password, salt)) {
+                            let token = crypto.randomBytes(64).toString('hex'); //I conjure a 64 byte token from random bytes
 
 
-                        return { http_id: 200, message: "Successful sign in", token: token };
+                            let query = "CALL new_login_token(?, ?)";
 
+                            connection.query(query, [userId, token], (err, results, fields) => {
+                                if (err) reject({ http_id: 400, message: "token add failed" });
+                                else resolve({ http_id: 200, message: "Successful sign in", token: token });
+
+                            });
+
+
+
+                        }
+                        else
+                            reject({ http_id: 400, message: "Wrong username or password" });
                     }
-                    else
-                        return { http_id: 400, message: "Wrong username or password" };
-                }
-            })
-        }
+                })
+            }
 
-        connection.release();
-    })
+            connection.release();
+        })
+    }).then((result) => { return result })
+        .catch((err) => { return err })
+    )
 
 
-    return null;
+
+
 }
 
 const logoutUser = () => {
