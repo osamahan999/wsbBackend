@@ -1,7 +1,6 @@
 const router = require('express').Router();
 
 const xss = require('xss'); //used for cleaning user input
-const pool = require('../config/mysqlConnector'); //connection pool
 
 
 const LoginAndRegisteration = require("../src/LoginAndRegisteration");
@@ -32,6 +31,8 @@ router.route('/userRegister').post(async (req, res) => {
 
 /**
  * Logs a user in by the token. Uses a 256 bit token, so absolutely impossible to brute force this.
+ * 
+ * @param {String} token
  */
 router.route('/loginWithToken').post(async (req, res) => {
     const cleanToken = xss(req.body.token);
@@ -42,12 +43,17 @@ router.route('/loginWithToken').post(async (req, res) => {
         res.status(response.http_id).json(response.message);
     else {
         let user = response.user;
-        res.json("Success");
+        res.json(user);
     }
 })
 
 /**
- * Logs a user in by the token. Uses a 256 bit token, so absolutely impossible to brute force this.
+ * Logs a user and produces a token.
+ * 
+ * Returns a login token
+ * 
+ * @param {String} username
+ * @param {String} password
  */
 router.route('/loginWithoutToken').post(async (req, res) => {
     const cleanUsername = xss(req.body.username);
@@ -55,14 +61,14 @@ router.route('/loginWithoutToken').post(async (req, res) => {
 
     let response = await LoginAndRegisteration.loginUserNoToken(cleanUsername, cleanPassword);
 
-    res.json(response);
+    if (response.http_id == 400 || response.http_id == 999)
+        res.status(response.http_id).json(response.message);
+    else {
+        let user = response.user[0];
 
-    // if (response.http_id == 400 || response.http_id == 999)
-    //     res.status(response.http_id).json(response.message);
-    // else {
-    //     let user = response.user;
-    //     res.json("Success");
-    // }
+        user["token"] = response.token;
+        res.json(user);
+    }
 
 })
 

@@ -135,7 +135,7 @@ const loginUserNoToken = (username, password) => {
 
                             connection.query(query, [userId, token], (err, results, fields) => {
                                 if (err) reject({ http_id: 400, message: "token add failed" });
-                                else resolve({ http_id: 200, message: "Successful sign in", token: token });
+                                else resolve({ http_id: 200, message: "Successful sign in", token: token, user: results[0] });
 
                             });
 
