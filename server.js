@@ -15,7 +15,7 @@ var pool = require('./config/mysqlConnector');
 
 
 
-const userRouter = require("./routes/userRouter");
+const userRouter = require("./build/routes/userRouter");
 app.use("/user", userRouter);
 
 

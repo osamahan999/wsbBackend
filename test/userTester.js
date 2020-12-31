@@ -1,6 +1,6 @@
 const expect = require("chai").expect;
 
-const LoginAndRegisteration = require("../src/LoginAndRegisteration");
+const LoginAndRegistration = require("../src/LoginAndRegistration")
 
 describe("User Login and Registeration tests", () => {
 
@@ -17,7 +17,7 @@ describe("User Login and Registeration tests", () => {
     describe("User Register", () => {
         it("Registers a user", () => {
             //do something
-            LoginAndRegisteration.registerUser();
+            LoginAndRegistration.registerUser();
 
             let query = "SELECT COUNT(*) FROM user WHERE username = ?"
 
@@ -28,7 +28,7 @@ describe("User Login and Registeration tests", () => {
 
     describe("User Login", () => {
         it("Logs a user in", () => {
-            let out = LoginAndRegisteration.loginUser();
+            let out = LoginAndRegistration.loginUser();
 
             expect(out).to.equal("Success");
         })
