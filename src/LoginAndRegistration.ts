@@ -1,8 +1,8 @@
 
 import * as crypto from 'crypto'; //used for generating salt
-import { MysqlError, PoolConnection } from 'mysql';
+import { MysqlError, Pool, PoolConnection } from 'mysql';
 
-const pool = require('../../config/mysqlConnector.js'); //connection pool
+const pool: Pool = require('../../config/mysqlConnector.js'); //connection pool
 
 /**
  * SHA256 hash using salt
@@ -157,7 +157,31 @@ const loginUserNoToken = (username: string, password: string) => {
 
 }
 
-const logoutUser = () => {
+
+/**
+ * Deletes a login token
+ * @param token Login token
+ */
+const logoutUser = (token: string) => {
+
+    const query: string = "DELETE FROM user_token WHERE token = ?";
+
+    return new Promise((resolve, reject) => {
+
+        pool.getConnection((error : MysqlError, connection : PoolConnection) => {
+            if (error) reject({http_id: 999, message: "Failed to get connection from pool"});
+            else {
+                connection.query(query, token, (err, results, fields) => {
+                    if (err) reject({http_id: 400, message: "Failed to delete token"});
+                    else resolve({http_id:200, message: "Token deleted successfully"});
+                })
+            }
+
+            connection.release();
+
+        })
+    });
+
 
 
     return null;

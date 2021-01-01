@@ -149,7 +149,27 @@ var loginUserNoToken = function (username, password) {
     }).then(function (result) { return result; })
         .catch(function (err) { return err; }));
 };
-var logoutUser = function () {
+/**
+ * Deletes a login token
+ * @param token Login token
+ */
+var logoutUser = function (token) {
+    var query = "DELETE FROM user_token WHERE token = ?";
+    return new Promise(function (resolve, reject) {
+        pool.getConnection(function (error, connection) {
+            if (error)
+                reject({ http_id: 999, message: "Failed to get connection from pool" });
+            else {
+                connection.query(query, token, function (err, results, fields) {
+                    if (err)
+                        reject({ http_id: 400, message: "Failed to delete token" });
+                    else
+                        resolve({ http_id: 200, message: "Token deleted successfully" });
+                });
+            }
+            connection.release();
+        });
+    });
     return null;
 };
 module.exports = {
