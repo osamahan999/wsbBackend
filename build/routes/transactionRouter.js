@@ -77,6 +77,9 @@ router.route('/purchaseStock').post(function (req, res) { return __awaiter(void 
                 cleanStockPrice = +xss(req.body.stockPrice);
                 cleanAmtOfStocks = +xss(req.body.amtOfStocks);
                 cleanExchange = xss(req.body.exchange);
+                if (!(cleanStockPrice != 0 && cleanStockName.length != 0
+                    && cleanAmtOfStocks != 0 && cleanExchange.length != 0
+                    && cleanToken.length != 0 && cleanPassword.length != 0)) return [3 /*break*/, 2];
                 return [4 /*yield*/, Transactions.purchaseStock(cleanToken, cleanPassword, cleanStockSymbol, cleanStockName, cleanStockPrice, cleanAmtOfStocks, cleanExchange)];
             case 1:
                 response = _a.sent();
@@ -85,7 +88,11 @@ router.route('/purchaseStock').post(function (req, res) { return __awaiter(void 
                 else {
                     res.json(response.message);
                 }
-                return [2 /*return*/];
+                return [3 /*break*/, 3];
+            case 2:
+                res.status(400).json("Inputs are invalid");
+                _a.label = 3;
+            case 3: return [2 /*return*/];
         }
     });
 }); });

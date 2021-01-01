@@ -49,22 +49,38 @@ router.route('/purchaseStock').post(async (req: Request, res: Response) => {
     const cleanAmtOfStocks : number = +xss(req.body.amtOfStocks);
     const cleanExchange : string = xss(req.body.exchange); 
     
+    /**
+     * Make sure input is not null
+     */
 
-    let response = await Transactions.purchaseStock(
-        cleanToken,
-        cleanPassword,
-        cleanStockSymbol,
-        cleanStockName,
-        cleanStockPrice,
-        cleanAmtOfStocks,
-        cleanExchange
-    );
+    if (
+        cleanStockPrice != 0 && cleanStockName.length != 0 
+        &&  cleanAmtOfStocks != 0 && cleanExchange.length != 0 
+        && cleanToken.length != 0 && cleanPassword.length != 0
+        ) {
 
-    if (response.http_id == 400 || response.http_id == 999)
-        res.status(response.http_id).json(response.message);
-    else {
-        res.json(response.message);
+        let response = await Transactions.purchaseStock(
+            cleanToken,
+            cleanPassword,
+            cleanStockSymbol,
+            cleanStockName,
+            cleanStockPrice,
+            cleanAmtOfStocks,
+            cleanExchange
+        );
+    
+        if (response.http_id == 400 || response.http_id == 999)
+            res.status(response.http_id).json(response.message);
+        else {
+            res.json(response.message);
+        }
+    } else {
+        res.status(400).json("Inputs are invalid");
     }
+    
+
+
+
 
     
 
