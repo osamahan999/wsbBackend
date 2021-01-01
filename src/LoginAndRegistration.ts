@@ -192,5 +192,6 @@ module.exports = {
     registerUser,
     loginUserNoToken,
     loginUserToken,
-    logoutUser
+    logoutUser,
+    hash
 }

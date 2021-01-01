@@ -176,5 +176,6 @@ module.exports = {
     registerUser: registerUser,
     loginUserNoToken: loginUserNoToken,
     loginUserToken: loginUserToken,
-    logoutUser: logoutUser
+    logoutUser: logoutUser,
+    hash: hash
 };

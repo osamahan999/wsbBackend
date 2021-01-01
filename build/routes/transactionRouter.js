@@ -38,34 +38,55 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var router = require('express').Router();
 var xss = require('xss'); //used for cleaning user input
+var Transactions = require('../src/Transactions');
+/**
+ * How to use API
+ */
+// const axios = require('axios').default;
+//     axios.get('https://sandbox.tradier.com/v1/markets/search', {
+//     params: {
+//         'q': 'jo',
+//         'indexes': 'false'
+//     },    
+//     headers: {
+//         'Authorization': 'Bearer <token>',
+//         'Accept': 'application/json'
+//     }
+//     }).then((response: AxiosResponse) => {
+//         console.log(response.data);
+//         res.json(response.data );
+//     }).catch((err : AxiosError) => {
+//         res.json(err);
+//     })
 /**
  * User calls this with their login token to make a purchase.
  *
  * I assume this is extremely insecure but I'm not sure how real payment systems handle this. Do you ask them for their password each time?
  *
- * TODO: get password of individual and hash it with salt
- * TODO: get cost of stock from API to make sure they paying right amt
+ * TODO: get cost of stock from API to make sure they paying right amt. Can do this, but this doubles my api calls so not doing it
  */
 router.route('/purchaseStock').post(function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
-    var axios;
+    var cleanToken, cleanPassword, cleanStockSymbol, cleanStockName, cleanStockPrice, cleanAmtOfStocks, cleanExchange, response;
     return __generator(this, function (_a) {
-        axios = require('axios').default;
-        axios.get('https://sandbox.tradier.com/v1/markets/search', {
-            params: {
-                'q': 'jo',
-                'indexes': 'false'
-            },
-            headers: {
-                'Authorization': 'Bearer IlFpk6JACJysDYYWsGhW1XpNV8FM',
-                'Accept': 'application/json'
-            }
-        }).then(function (response) {
-            console.log(response.data);
-            res.json(response.data);
-        }).catch(function (err) {
-            res.json(err);
-        });
-        return [2 /*return*/];
+        switch (_a.label) {
+            case 0:
+                cleanToken = xss(req.body.token);
+                cleanPassword = xss(req.body.password);
+                cleanStockSymbol = xss(req.body.stockSymbol);
+                cleanStockName = xss(req.body.stockName);
+                cleanStockPrice = +xss(req.body.stockPrice);
+                cleanAmtOfStocks = +xss(req.body.amtOfStocks);
+                cleanExchange = xss(req.body.exchange);
+                return [4 /*yield*/, Transactions.purchaseStock(cleanToken, cleanPassword, cleanStockSymbol, cleanStockName, cleanStockPrice, cleanAmtOfStocks, cleanExchange)];
+            case 1:
+                response = _a.sent();
+                if (response.http_id == 400 || response.http_id == 999)
+                    res.status(response.http_id).json(response.message);
+                else {
+                    res.json(response.message);
+                }
+                return [2 /*return*/];
+        }
     });
 }); });
 module.exports = router;

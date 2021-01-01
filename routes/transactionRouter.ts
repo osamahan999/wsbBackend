@@ -5,7 +5,7 @@ import { Request, Response } from "express";
 const router = require('express').Router();
 
 const xss = require('xss'); //used for cleaning user input
-
+const Transactions = require('../src/Transactions');
 
 /**
  * How to use API
@@ -34,21 +34,37 @@ const xss = require('xss'); //used for cleaning user input
  * 
  * I assume this is extremely insecure but I'm not sure how real payment systems handle this. Do you ask them for their password each time?
  * 
- * TODO: get password of individual and hash it with salt
- * TODO: get cost of stock from API to make sure they paying right amt
+ * TODO: get cost of stock from API to make sure they paying right amt. Can do this, but this doubles my api calls so not doing it
  */
 router.route('/purchaseStock').post(async (req: Request, res: Response) => {
 
-    // const cleanToken: string = xss(req.body.token);
-    // const cleanPassword: string = xss(req.body.password);
+    //used for authentication
+    const cleanToken: string = xss(req.body.token);
+    const cleanPassword: string = xss(req.body.password);
 
-    // let response = await LoginAndRegisteration.registerUser(cleanUsername, cleanPassword, cleanEmail);
+    //used for purchase
+    const cleanStockSymbol: string = xss(req.body.stockSymbol);
+    const cleanStockName : string = xss(req.body.stockName);
+    const cleanStockPrice : number = +xss(req.body.stockPrice); //+'string' casts to number
+    const cleanAmtOfStocks : number = +xss(req.body.amtOfStocks);
+    const cleanExchange : string = xss(req.body.exchange); 
+    
 
-    // if (response.http_id == 400 || response.http_id == 999)
-    //     res.status(response.http_id).json(response.message);
-    // else {
-    //     res.json(response.message);
-    // }
+    let response = await Transactions.purchaseStock(
+        cleanToken,
+        cleanPassword,
+        cleanStockSymbol,
+        cleanStockName,
+        cleanStockPrice,
+        cleanAmtOfStocks,
+        cleanExchange
+    );
+
+    if (response.http_id == 400 || response.http_id == 999)
+        res.status(response.http_id).json(response.message);
+    else {
+        res.json(response.message);
+    }
 
     
 

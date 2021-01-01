@@ -1,105 +1,76 @@
-
-import { MysqlError, Pool, PoolConnection } from 'mysql';
-
-const pool: Pool = require('../../config/mysqlConnector.js'); //connection pool
-const LoginAndRegisteration = require("./LoginAndRegistration");
-
-
-
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+var pool = require('../../config/mysqlConnector.js'); //connection pool
+var LoginAndRegisteration = require("./LoginAndRegistration");
 /**
  * Checks if user is authenticated. If so purchases a stock if the user has the money.
- * 
- * 
+ *
+ *
  * @param token login token
  * @param password password -> hashed and checked with token-corresponding user to authenticate
  * @param stockSymbol //ex TSLA
  * @param stockName  //ex Alphabet Inc
- * @param stockPrice //A double with a max value of 999999:99 
+ * @param stockPrice //A double with a max value of 999999:99
  * @param amtOfStocks //Integer
  * @param exchange // ex: NYSE
  */
-const purchaseStock = (
-    token: string,
-    password: string,
-    stockSymbol: string,
-    stockName: string,
-    stockPrice: number,
-    amtOfStocks: number,
-    exchange: string) => {
-
-
-
+var purchaseStock = function (token, password, stockSymbol, stockName, stockPrice, amtOfStocks, exchange) {
     // join user and user_token and get user data
-    const query: string = "SELECT user.user_id, hashed_password, salt, total_money FROM user_token"
+    var query = "SELECT user.user_id, hashed_password, salt, total_money FROM user_token"
         + " JOIN user ON user.user_id = user_token.user_id WHERE user_token.token = ?";
-
-
-
-    return new Promise((resolve, reject) => {
-
-        pool.getConnection((error: MysqlError, connection: PoolConnection) => {
-            if (error) reject({ http_id: 999, message: "Failed to get connection from pool" });
+    return new Promise(function (resolve, reject) {
+        pool.getConnection(function (error, connection) {
+            if (error)
+                reject({ http_id: 999, message: "Failed to get connection from pool" });
             else {
-                connection.query(query, token, (err, results, fields) => {
-                    if (err) reject({ http_id: 400, message: "Failed to get user" });
+                connection.query(query, token, function (err, results, fields) {
+                    if (err)
+                        reject({ http_id: 400, message: "Failed to get user" });
                     else {
-
                         //check if token applies to any user
                         if (results[0] == null || results[0].length == 0) {
                             reject({ http_id: 400, message: "Authentication failed" });
-                        } else {
-                            const hashed_password: string = results[0].hashed_password;
-                            const salt: string = results[0].salt;
-
-
+                        }
+                        else {
+                            var hashed_password = results[0].hashed_password;
+                            var salt = results[0].salt;
                             //authenticate user based on token and password input
                             if (LoginAndRegisteration.hash(password, salt) == hashed_password) {
-                                const totalMoney: number = +results[0].total_money;
-                                const userId: number = +results[0].user_id;
+                                var totalMoney = +results[0].total_money;
+                                var userId = +results[0].user_id;
                                 console.log(userId);
-
-                                const totalCost: number = amtOfStocks * stockPrice;
-
+                                var totalCost = amtOfStocks * stockPrice;
                                 //input = userId, stockSymbol, stockName, stockCost, exchangeName, amtOfStocks, costOfStocks, totalMoney
                                 //Checks if user has enough money for this transaction
                                 //Gets id of exchange; if does not exist, inserts it.
                                 //Gets id of stock in this exchange; if does not exist, inserts it
                                 //Purchases stock for the user
-                                const query: string = "CALL purchase_stock(?, ?, ?, ?, ?, ?, ?, ?)";
-                                const input: Array<string | number> = [userId, stockSymbol, stockName, stockPrice, exchange, amtOfStocks, totalCost, totalMoney];
-
-                                connection.query(query, input, (err, results, fields) => {
+                                var query_1 = "CALL purchase_stock(?, ?, ?, ?, ?, ?, ?, ?)";
+                                var input = [userId, stockSymbol, stockName, stockPrice, exchange, amtOfStocks, totalCost, totalMoney];
+                                connection.query(query_1, input, function (err, results, fields) {
                                     if (err) {
                                         reject({ http_id: 400, message: "Failed to purchase stock" });
                                     }
                                     else {
                                         resolve({ http_id: 200, message: "Purchase successful" });
                                     }
-
-                                })
-                            } else {
+                                });
+                            }
+                            else {
                                 reject({ http_id: 400, message: "Authentication failed" });
                             }
-
                         }
                     }
-                })
+                });
             }
-
             connection.release();
-
-        })
-    }).then((json) => {
+        });
+    }).then(function (json) {
         return json;
-    }).catch((err) => {
+    }).catch(function (err) {
         return err;
-    })
-
-
-
-}
-
-
+    });
+};
 module.exports = {
-    purchaseStock
-}
+    purchaseStock: purchaseStock
+};
