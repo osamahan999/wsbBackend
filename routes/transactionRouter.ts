@@ -50,7 +50,7 @@ router.route('/purchaseStock').post(async (req: Request, res: Response) => {
     const cleanExchange : string = xss(req.body.exchange); 
     
     /**
-     * Make sure input is not null
+     * Make sure input is not null or empty
      */
 
     if (

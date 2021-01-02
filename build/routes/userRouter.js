@@ -60,6 +60,7 @@ router.route('/userRegister').post(function (req, res) { return __awaiter(void 0
                 return [4 /*yield*/, LoginAndRegisteration.registerUser(cleanUsername, cleanPassword, cleanEmail)];
             case 1:
                 response = _a.sent();
+                console.log(response);
                 if (response.http_id == 400 || response.http_id == 999)
                     res.status(response.http_id).json(response.message);
                 else {
