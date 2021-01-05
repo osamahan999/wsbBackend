@@ -60,34 +60,65 @@ router.route('/getStockQuote').get(function (req, res) {
     });
 });
 /**
- * TODO: options router
- *
- * 1. get option expirations
- * 2. get options for symbol with said expirations
- * 3. return #2
- *
- * Takes in a stock symbol
- *
- * Returns an array of JSON of options for said stock
- *
- *
+ * Gets you all expiration dates
+ * @param {string} symbol
+ * @returns {array<string>} dates
  */
-router.route('/getOptions').get(function (req, res) {
+router.route('/getExpirations').get(function (req, res) {
     var stock = xss(req.query.symbol);
-    axios.get("https://sandbox.tradier.com/v1/markets/options/lookup", {
+    axios.get("https://sandbox.tradier.com/v1/markets/options/expirations", {
         params: {
-            'underlying': stock
+            'symbol': stock
         },
         headers: {
             'Authorization': 'Bearer ' + api.getToken(),
             'Accept': 'application/json'
         }
     }).then(function (response) {
-        var options = response.data.symbols[0].options;
-        var len = options.length;
-        len > 2100 ? res.json(options.slice(0, 2100)) : res.json(options);
+        res.json(response.data.expirations.date);
+    }).catch(function (error) {
+        res.status(400).json("Error getting dates");
+    });
+});
+/**
+ * Gets option chains for a specific symbol with specific expiration
+ *
+ * @param {string} symbol
+ * @param {string} expiration
+ * @param {string} optionType //'call' for calls, 'put' for puts, 'all' for both
+ *
+ * @returns {array<JSON>} option chain
+ */
+router.route('/getOptionsOnDate').get(function (req, res) {
+    var stock = xss(req.query.symbol);
+    var expiration = xss(req.query.expiration);
+    var optionType = xss(req.query.optionType);
+    axios.get("https://sandbox.tradier.com/v1/markets/options/chains", {
+        params: {
+            'symbol': stock,
+            'expiration': expiration,
+            'greeks': true
+        },
+        headers: {
+            'Authorization': 'Bearer ' + api.getToken(),
+            'Accept': 'application/json'
+        }
+    }).then(function (response) {
+        var options = response.data.options.option;
+        /**
+         * If optionType is call or put, return the options filtered for the specified type
+         */
+        if (optionType == 'call' || optionType == 'put') {
+            res.json(options.filter(function (option) { return option.option_type.includes(optionType); }));
+        }
+        else if (optionType == 'any') {
+            res.json(options);
+        }
+        else {
+            res.status(400).json("Invalid option type");
+        }
     }).catch(function (err) {
-        res.status(400).json(err);
+        res.status(400).json("Error getting options");
     });
 });
 module.exports = router;

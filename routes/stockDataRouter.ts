@@ -90,46 +90,80 @@ router.route('/getStockQuote').get((req: Request, res: Response) => {
 })
 
 
+
+
 /**
- * TODO: options router
- * 
- * 1. get option expirations
- * 2. get options for symbol with said expirations
- * 3. return #2
- * 
- * Takes in a stock symbol 
- * 
- * Returns an array of JSON of options for said stock
- * 
- * 
+ * Gets you all expiration dates
+ * @param {string} symbol
+ * @returns {array<string>} dates
  */
-
-router.route('/getOptions').get((req: Request, res: Response) => {
-
+router.route('/getExpirations').get((req: Request, res: Response) => {
     let stock: string = xss(req.query.symbol);
 
 
-
-    axios.get("https://sandbox.tradier.com/v1/markets/options/lookup", {
+    axios.get("https://sandbox.tradier.com/v1/markets/options/expirations", {
         params: {
-            'underlying': stock
+            'symbol': stock
         },
         headers: {
             'Authorization': 'Bearer ' + api.getToken(),
             'Accept': 'application/json'
         }
     }).then((response: AxiosResponse) => {
-        let options: Array<JSON> = response.data.symbols[0].options;
-        let len = options.length;
+        res.json(response.data.expirations.date);
+    }).catch((error: AxiosError) => {
+        res.status(400).json("Error getting dates");
+    })
 
-        len > 2100 ? res.json(options.slice(0, 2100)) : res.json(options);
+})
 
+
+/**
+ * Gets option chains for a specific symbol with specific expiration for either call, put, or both
+ * 
+ * @param {string} symbol
+ * @param {string} expiration
+ * @param {string} optionType //'call' for calls, 'put' for puts, 'all' for both
+ * 
+ * @returns {array<JSON>} option chain
+ */
+router.route('/getOptionsOnDate').get((req: Request, res: Response) => {
+
+    let stock: string = xss(req.query.symbol);
+    let expiration: string = xss(req.query.expiration);
+    let optionType: string = xss(req.query.optionType);
+
+    axios.get("https://sandbox.tradier.com/v1/markets/options/chains", {
+        params: {
+            'symbol': stock,
+            'expiration': expiration,
+            'greeks': true
+        },
+        headers: {
+            'Authorization': 'Bearer ' + api.getToken(),
+            'Accept': 'application/json'
+        }
+    }).then((response: AxiosResponse) => {
+
+        let options: Array<JSON> = response.data.options.option;
+
+        /**
+         * If optionType is call or put, return the options filtered for the specified type
+         */
+        if (optionType == 'call' || optionType == 'put') {
+            res.json(options.filter((option: JSON | any) => option.option_type.includes(optionType)))
+        }
+        else if (optionType == 'any') {
+            res.json(options);
+        } else {
+            res.status(400).json("Invalid option type")
+        }
 
 
 
     }).catch((err: AxiosError) => {
 
-        res.status(400).json(err);
+        res.status(400).json("Error getting options");
 
     })
 
