@@ -168,12 +168,12 @@ const logoutUser = (token: string) => {
 
     return new Promise((resolve, reject) => {
 
-        pool.getConnection((error : MysqlError, connection : PoolConnection) => {
-            if (error) reject({http_id: 999, message: "Failed to get connection from pool"});
+        pool.getConnection((error: MysqlError, connection: PoolConnection) => {
+            if (error) reject({ http_id: 999, message: "Failed to get connection from pool" });
             else {
                 connection.query(query, token, (err, results, fields) => {
-                    if (err) reject({http_id: 400, message: "Failed to delete token"});
-                    else resolve({http_id:200, message: "Token deleted successfully"});
+                    if (err) reject({ http_id: 400, message: "Failed to delete token" });
+                    else resolve({ http_id: 200, message: "Token deleted successfully" });
                 })
             }
 
@@ -182,9 +182,6 @@ const logoutUser = (token: string) => {
         })
     });
 
-
-
-    return null;
 }
 
 

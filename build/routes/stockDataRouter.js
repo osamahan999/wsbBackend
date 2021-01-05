@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 var router = require('express').Router();
 var xss = require('xss'); //used for cleaning user input
+//For api tokens
 var api = require('../../config/apiTokens');
 var axios = require('axios').default;
 /**
@@ -81,7 +82,7 @@ router.route('/getExpirations').get(function (req, res) {
     });
 });
 /**
- * Gets option chains for a specific symbol with specific expiration
+ * Gets option chains for a specific symbol with specific expiration for either call, put, or both
  *
  * @param {string} symbol
  * @param {string} expiration

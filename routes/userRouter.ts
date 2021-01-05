@@ -78,5 +78,20 @@ router.route('/loginWithoutToken').post(async (req: Request, res: Response) => {
 
 })
 
+/**
+ * Logout delete token
+ */
+router.route('/logout').post(async (req: Request, res: Response) => {
+    const cleanToken: string = xss(req.body.token);
+
+    let response = await LoginAndRegisteration.logoutUser(cleanToken);
+
+    if (response.http_id == 400 || response.http_id == 999)
+        res.status(response.http_id).json(response.message);
+    else {
+        res.json(response.message);
+    }
+})
+
 
 module.exports = router

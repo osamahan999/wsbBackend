@@ -122,4 +122,25 @@ router.route('/loginWithoutToken').post(function (req, res) { return __awaiter(v
         }
     });
 }); });
+/**
+ * Logout delete token
+ */
+router.route('/logout').post(function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
+    var cleanToken, response;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                cleanToken = xss(req.body.token);
+                return [4 /*yield*/, LoginAndRegisteration.logoutUser(cleanToken)];
+            case 1:
+                response = _a.sent();
+                if (response.http_id == 400 || response.http_id == 999)
+                    res.status(response.http_id).json(response.message);
+                else {
+                    res.json(response.message);
+                }
+                return [2 /*return*/];
+        }
+    });
+}); });
 module.exports = router;

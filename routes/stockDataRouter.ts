@@ -6,6 +6,7 @@ const router = require('express').Router();
 
 const xss = require('xss'); //used for cleaning user input
 
+//For api tokens
 const api = require('../../config/apiTokens');
 
 

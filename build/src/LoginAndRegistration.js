@@ -170,7 +170,6 @@ var logoutUser = function (token) {
             connection.release();
         });
     });
-    return null;
 };
 module.exports = {
     registerUser: registerUser,
