@@ -7,26 +7,6 @@ const router = require('express').Router();
 const xss = require('xss'); //used for cleaning user input
 const Transactions = require('../src/Transactions');
 
-/**
- * How to use API
- */
-// const axios = require('axios').default;
-
-//     axios.get('https://sandbox.tradier.com/v1/markets/search', {
-//     params: {
-//         'q': 'jo',
-//         'indexes': 'false'
-//     },    
-//     headers: {
-//         'Authorization': 'Bearer <token>',
-//         'Accept': 'application/json'
-//     }
-//     }).then((response: AxiosResponse) => {
-//         console.log(response.data);
-//         res.json(response.data );
-//     }).catch((err : AxiosError) => {
-//         res.json(err);
-//     })
 
 
 /**
@@ -52,7 +32,6 @@ router.route('/purchaseStock').post(async (req: Request, res: Response) => {
     /**
      * Make sure input is not null or empty
      */
-
     if (
         cleanStockPrice != 0 && cleanStockName.length != 0
         && cleanAmtOfStocks != 0 && cleanExchange.length != 0
@@ -78,14 +57,55 @@ router.route('/purchaseStock').post(async (req: Request, res: Response) => {
     } else {
         res.status(400).json("Inputs are invalid");
     }
-
-
-
-
-
-
-
 })
+
+/**
+ * User calls this with their login token to make a purchase of an option.
+ * 
+ * 
+ * TODO: get cost of option from API to make sure they paying right amt. Can do this, but this doubles my api calls so not doing it
+ */
+router.route('/purchaseOption').post(async (req: Request, res: Response) => {
+
+    //used for authentication
+    const cleanToken: string = xss(req.body.token);
+    const cleanPassword: string = xss(req.body.password);
+
+    //used for purchase
+    const cleanOptionSymbol: string = xss(req.body.optionSymbol);
+    const cleanOptionPrice: number = +xss(req.body.optionPrice); //+'string' casts to number
+    const cleanAmtOfContracts: number = +xss(req.body.amtOfContracts);
+
+    /**
+     * Make sure input is not null or empty
+     */
+
+    if (
+        cleanOptionPrice != 0 && cleanOptionSymbol.length != 0
+        && cleanAmtOfContracts != 0
+        && cleanToken.length != 0 && cleanPassword.length != 0
+        && cleanAmtOfContracts > 0
+    ) {
+
+        let response = await Transactions.purchaseOption(
+            cleanToken,
+            cleanPassword,
+
+            cleanOptionSymbol,
+            cleanOptionPrice,
+            cleanAmtOfContracts
+        );
+
+        if (response.http_id == 400 || response.http_id == 999)
+            res.status(response.http_id).json(response.message);
+        else {
+            res.json(response.message);
+        }
+    } else {
+        res.status(400).json("Inputs are invalid");
+    }
+})
+
 
 
 module.exports = router

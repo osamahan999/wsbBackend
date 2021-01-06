@@ -84,7 +84,7 @@ router.route('/getExpirations').get(function (req, res) {
  * Gets option chains for a specific symbol with specific expiration for either call, put, or both
  *
  * @param {string} symbol
- * @param {string} expiration
+ * @param {string} expiration //ex : '2021-01-08'
  * @param {string} optionType //'call' for calls, 'put' for puts, 'all' for both
  *
  * @returns {array<JSON>} option chain
