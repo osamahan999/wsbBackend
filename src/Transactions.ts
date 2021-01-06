@@ -56,7 +56,6 @@ const purchaseStock = (
                             if (LoginAndRegisteration.hash(password, salt) == hashed_password) {
                                 const totalMoney: number = +results[0].total_money;
                                 const userId: number = +results[0].user_id;
-                                console.log(userId);
 
                                 const totalCost: number = amtOfStocks * stockPrice;
 

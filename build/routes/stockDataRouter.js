@@ -54,7 +54,6 @@ router.route('/getStockQuote').get(function (req, res) {
         }
     }).then(function (response) {
         var quote = response.data.quotes.quote;
-        console.log(response.data);
         res.json(quote);
     }).catch(function (err) {
         res.status(400).json(err);

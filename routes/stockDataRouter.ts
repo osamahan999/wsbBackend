@@ -78,7 +78,6 @@ router.route('/getStockQuote').get((req: Request, res: Response) => {
         }
     }).then((response: AxiosResponse) => {
         let quote: JSON = response.data.quotes.quote;
-        console.log(response.data);
         res.json(quote);
 
 

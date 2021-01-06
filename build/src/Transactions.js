@@ -38,7 +38,6 @@ var purchaseStock = function (token, password, stockSymbol, stockName, stockPric
                             if (LoginAndRegisteration.hash(password, salt) == hashed_password) {
                                 var totalMoney = +results[0].total_money;
                                 var userId = +results[0].user_id;
-                                console.log(userId);
                                 var totalCost = amtOfStocks * stockPrice;
                                 //input = userId, stockSymbol, stockName, stockCost, exchangeName, amtOfStocks, costOfStocks, totalMoney
                                 //Checks if user has enough money for this transaction

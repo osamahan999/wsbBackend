@@ -79,7 +79,8 @@ router.route('/purchaseStock').post(function (req, res) { return __awaiter(void 
                 cleanExchange = xss(req.body.exchange);
                 if (!(cleanStockPrice != 0 && cleanStockName.length != 0
                     && cleanAmtOfStocks != 0 && cleanExchange.length != 0
-                    && cleanToken.length != 0 && cleanPassword.length != 0)) return [3 /*break*/, 2];
+                    && cleanToken.length != 0 && cleanPassword.length != 0
+                    && cleanAmtOfStocks > 0)) return [3 /*break*/, 2];
                 return [4 /*yield*/, Transactions.purchaseStock(cleanToken, cleanPassword, cleanStockSymbol, cleanStockName, cleanStockPrice, cleanAmtOfStocks, cleanExchange)];
             case 1:
                 response = _a.sent();
