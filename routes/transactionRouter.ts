@@ -106,6 +106,47 @@ router.route('/purchaseOption').post(async (req: Request, res: Response) => {
     }
 })
 
+/**
+ * Gets a user's purchases of a specific stock
+ */
+router.route('/getSpecificPosition').get(async (req: Request, res: Response) => {
+    const cleanUserId = +xss(req.query.userId);
+    const cleanStockSymbol = xss(req.query.stockSymbol);
 
+    if (cleanUserId != 0 && cleanUserId != null && cleanStockSymbol.length > 0) {
+        let response = await Transactions.getUserPositionsSpecificStock(cleanUserId, cleanStockSymbol);
+
+        if (response.http_id == 400 || response.http_id == 999)
+            res.status(response.http_id).json(response.message);
+        else {
+            res.json(response);
+        }
+    } else {
+
+        res.status(400).json("Inputs are invalid");
+    }
+})
+
+
+/**
+ * Gets a user's purchases of a stock's options
+ */
+router.route('/getSpecificOptionPosition').get(async (req: Request, res: Response) => {
+    const cleanUserId = +xss(req.query.userId);
+    const cleanStockSymbol = xss(req.query.stockSymbol);
+
+    if (cleanUserId != 0 && cleanUserId != null && cleanStockSymbol.length > 0) {
+        let response = await Transactions.getUserPositionsSpecificOption(cleanUserId, cleanStockSymbol);
+
+        if (response.http_id == 400 || response.http_id == 999)
+            res.status(response.http_id).json(response.message);
+        else {
+            res.json(response);
+        }
+    } else {
+
+        res.status(400).json("Inputs are invalid");
+    }
+})
 
 module.exports = router

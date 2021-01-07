@@ -183,7 +183,84 @@ const purchaseOption = (
 
 
 
+/**
+ * Get the user's stock positions for a specific ticker
+ * @param userId 
+ * @param stockSymbol 
+ */
+const getUserPositionsSpecificStock = (userId: number, stockSymbol: string) => {
+
+    const query = "SELECT * FROM purchase WHERE (user_id = ?) AND (stock_id IN (SELECT stock_id FROM stock WHERE stock_symbol = ?))";
+
+
+    return new Promise((resolve, reject) => {
+
+        pool.getConnection((error: MysqlError, connection: PoolConnection) => {
+            if (error) reject({ http_id: 999, message: "Failed to get connection from pool" });
+            else {
+                connection.query(query, [userId, stockSymbol], (err, results, fields) => {
+                    if (err)
+                        reject({ http_id: 400, message: "Failed to get user positions" });
+                    else {
+                        resolve({ http_id: 200, message: "success", positions: results })
+
+                    }
+                })
+            }
+            connection.release();
+        })
+    }).then((json) => {
+        return json;
+    }).catch((err) => {
+        return err;
+    })
+
+
+}
+
+/**
+ * Get the user's stock positions for a specific ticker
+ * @param userId 
+ * @param stockSymbol 
+ */
+const getUserPositionsSpecificOption = (userId: number, optionSymbol: string) => {
+
+
+    const query = "SELECT * FROM option_purchase NATURAL JOIN contract_option"
+        + " WHERE (user_id = ?) AND "
+        + "(option_id IN (SELECT option_id FROM contract_option WHERE option_symbol LIKE concat(?, '%')))";
+
+
+    return new Promise((resolve, reject) => {
+
+        pool.getConnection((error: MysqlError, connection: PoolConnection) => {
+            if (error) reject({ http_id: 999, message: "Failed to get connection from pool" });
+            else {
+                connection.query(query, [userId, optionSymbol], (err, results, fields) => {
+                    if (err) {
+                        reject({ http_id: 400, message: "Failed to get user positions" });
+                    }
+                    else {
+                        resolve({ http_id: 200, message: "success", positions: results })
+
+                    }
+                })
+            }
+            connection.release();
+        })
+    }).then((json) => {
+        return json;
+    }).catch((err) => {
+        return err;
+    })
+
+
+}
+
+
 module.exports = {
     purchaseStock,
-    purchaseOption
+    purchaseOption,
+    getUserPositionsSpecificStock,
+    getUserPositionsSpecificOption
 }

@@ -138,7 +138,71 @@ var purchaseOption = function (token, password, optionSymbol, optionPrice, amtOf
         return err;
     });
 };
+/**
+ * Get the user's stock positions for a specific ticker
+ * @param userId
+ * @param stockSymbol
+ */
+var getUserPositionsSpecificStock = function (userId, stockSymbol) {
+    var query = "SELECT * FROM purchase WHERE (user_id = ?) AND (stock_id IN (SELECT stock_id FROM stock WHERE stock_symbol = ?))";
+    return new Promise(function (resolve, reject) {
+        pool.getConnection(function (error, connection) {
+            if (error)
+                reject({ http_id: 999, message: "Failed to get connection from pool" });
+            else {
+                connection.query(query, [userId, stockSymbol], function (err, results, fields) {
+                    if (err)
+                        reject({ http_id: 400, message: "Failed to get user positions" });
+                    else {
+                        resolve({ http_id: 200, message: "success", positions: results });
+                    }
+                });
+            }
+            connection.release();
+        });
+    }).then(function (json) {
+        return json;
+    }).catch(function (err) {
+        return err;
+    });
+};
+/**
+ * Get the user's stock positions for a specific ticker
+ * @param userId
+ * @param stockSymbol
+ */
+var getUserPositionsSpecificOption = function (userId, optionSymbol) {
+    console.log(optionSymbol);
+    var query = "SELECT * FROM option_purchase NATURAL JOIN contract_option"
+        + " WHERE (user_id = ?) AND "
+        + "(option_id IN (SELECT option_id FROM contract_option WHERE option_symbol LIKE concat(?, '%')))";
+    return new Promise(function (resolve, reject) {
+        pool.getConnection(function (error, connection) {
+            if (error)
+                reject({ http_id: 999, message: "Failed to get connection from pool" });
+            else {
+                connection.query(query, [userId, optionSymbol], function (err, results, fields) {
+                    if (err) {
+                        console.log(err);
+                        reject({ http_id: 400, message: "Failed to get user positions" });
+                    }
+                    else {
+                        console.log(results);
+                        resolve({ http_id: 200, message: "success", positions: results });
+                    }
+                });
+            }
+            connection.release();
+        });
+    }).then(function (json) {
+        return json;
+    }).catch(function (err) {
+        return err;
+    });
+};
 module.exports = {
     purchaseStock: purchaseStock,
-    purchaseOption: purchaseOption
+    purchaseOption: purchaseOption,
+    getUserPositionsSpecificStock: getUserPositionsSpecificStock,
+    getUserPositionsSpecificOption: getUserPositionsSpecificOption
 };

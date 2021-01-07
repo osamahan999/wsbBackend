@@ -114,4 +114,58 @@ router.route('/purchaseOption').post(function (req, res) { return __awaiter(void
         }
     });
 }); });
+/**
+ * Gets a user's purchases of a specific stock
+ */
+router.route('/getSpecificPosition').get(function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
+    var cleanUserId, cleanStockSymbol, response;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                cleanUserId = +xss(req.query.userId);
+                cleanStockSymbol = xss(req.query.stockSymbol);
+                if (!(cleanUserId != 0 && cleanUserId != null && cleanStockSymbol.length > 0)) return [3 /*break*/, 2];
+                return [4 /*yield*/, Transactions.getUserPositionsSpecificStock(cleanUserId, cleanStockSymbol)];
+            case 1:
+                response = _a.sent();
+                if (response.http_id == 400 || response.http_id == 999)
+                    res.status(response.http_id).json(response.message);
+                else {
+                    res.json(response);
+                }
+                return [3 /*break*/, 3];
+            case 2:
+                res.status(400).json("Inputs are invalid");
+                _a.label = 3;
+            case 3: return [2 /*return*/];
+        }
+    });
+}); });
+/**
+ * Gets a user's purchases of a stock's options
+ */
+router.route('/getSpecificOptionPosition').get(function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
+    var cleanUserId, cleanStockSymbol, response;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                cleanUserId = +xss(req.query.userId);
+                cleanStockSymbol = xss(req.query.stockSymbol);
+                if (!(cleanUserId != 0 && cleanUserId != null && cleanStockSymbol.length > 0)) return [3 /*break*/, 2];
+                return [4 /*yield*/, Transactions.getUserPositionsSpecificOption(cleanUserId, cleanStockSymbol)];
+            case 1:
+                response = _a.sent();
+                if (response.http_id == 400 || response.http_id == 999)
+                    res.status(response.http_id).json(response.message);
+                else {
+                    res.json(response);
+                }
+                return [3 /*break*/, 3];
+            case 2:
+                res.status(400).json("Inputs are invalid");
+                _a.label = 3;
+            case 3: return [2 /*return*/];
+        }
+    });
+}); });
 module.exports = router;
