@@ -1,7 +1,20 @@
 "use strict";
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 var pool = require('../../config/mysqlConnector.js'); //connection pool
 var LoginAndRegisteration = require("./LoginAndRegistration");
+var api = require('../../config/apiTokens');
+var axios = require('axios');
 /**
  * Checks if user is authenticated. If so purchases a stock if the user has the money.
  *
@@ -172,8 +185,7 @@ var getUserPositionsSpecificStock = function (userId, stockSymbol) {
  * @param stockSymbol
  */
 var getUserPositionsSpecificOption = function (userId, optionSymbol) {
-    console.log(optionSymbol);
-    var query = "SELECT * FROM option_purchase NATURAL JOIN contract_option"
+    var query = "SELECT option_symbol, date_purchased, price_at_purchase, amt_of_contracts, amt_sold FROM option_purchase NATURAL JOIN contract_option"
         + " WHERE (user_id = ?) AND "
         + "(option_id IN (SELECT option_id FROM contract_option WHERE option_symbol LIKE concat(?, '%')))";
     return new Promise(function (resolve, reject) {
@@ -183,12 +195,48 @@ var getUserPositionsSpecificOption = function (userId, optionSymbol) {
             else {
                 connection.query(query, [userId, optionSymbol], function (err, results, fields) {
                     if (err) {
-                        console.log(err);
                         reject({ http_id: 400, message: "Failed to get user positions" });
                     }
                     else {
-                        console.log(results);
-                        resolve({ http_id: 200, message: "success", positions: results });
+                        /**
+                         * The option symbols that we need the data for
+                         */
+                        var symbols = "";
+                        for (var i = 0; i < results.length; i++) {
+                            symbols += results[i]['option_symbol'];
+                            i != results.length - 1 && (symbols += ",");
+                        }
+                        /**
+                         * Get the option details for the options the user owns
+                         */
+                        axios.get("https://sandbox.tradier.com/v1/markets/quotes", {
+                            params: {
+                                'symbols': symbols,
+                                'greeks': false
+                            },
+                            headers: {
+                                'Authorization': 'Bearer ' + api.getToken(),
+                                'Accept': 'application/json'
+                            }
+                        }).then(function (response) {
+                            //build return array
+                            var quote = response.data.quotes.quote; //array of jsons
+                            //options is our pulled array of jsons
+                            var retArr = [];
+                            var _loop_1 = function (i) {
+                                quote.forEach(function (quoteJSON) {
+                                    if (results[i]['option_symbol'] == quoteJSON['symbol']) {
+                                        retArr[i] = __assign(__assign({}, results[i]), quoteJSON);
+                                    }
+                                });
+                            };
+                            for (var i = 0; i < results.length; i++) {
+                                _loop_1(i);
+                            }
+                            resolve({ http_id: 200, message: "success", positions: retArr });
+                        }).catch(function (err) {
+                            reject({ http_id: 400, message: "Failed to option data" });
+                        });
                     }
                 });
             }

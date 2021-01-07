@@ -1,9 +1,13 @@
 
+import { AxiosError, AxiosResponse } from 'axios';
 import { MysqlError, Pool, PoolConnection } from 'mysql';
+import { forEachChild, ObjectFlags } from 'typescript';
 
 const pool: Pool = require('../../config/mysqlConnector.js'); //connection pool
 const LoginAndRegisteration = require("./LoginAndRegistration");
 
+const api = require('../../config/apiTokens');
+const axios = require('axios');
 
 
 /**
@@ -226,7 +230,7 @@ const getUserPositionsSpecificStock = (userId: number, stockSymbol: string) => {
 const getUserPositionsSpecificOption = (userId: number, optionSymbol: string) => {
 
 
-    const query = "SELECT * FROM option_purchase NATURAL JOIN contract_option"
+    const query = "SELECT option_symbol, date_purchased, price_at_purchase, amt_of_contracts, amt_sold FROM option_purchase NATURAL JOIN contract_option"
         + " WHERE (user_id = ?) AND "
         + "(option_id IN (SELECT option_id FROM contract_option WHERE option_symbol LIKE concat(?, '%')))";
 
@@ -241,7 +245,55 @@ const getUserPositionsSpecificOption = (userId: number, optionSymbol: string) =>
                         reject({ http_id: 400, message: "Failed to get user positions" });
                     }
                     else {
-                        resolve({ http_id: 200, message: "success", positions: results })
+
+
+
+                        /**
+                         * The option symbols that we need the data for
+                         */
+                        let symbols: string = "";
+                        for (let i = 0; i < results.length; i++) {
+                            symbols += results[i]['option_symbol'];
+                            i != results.length - 1 && (symbols += ",");
+                        }
+                        /**
+                         * Get the option details for the options the user owns
+                         */
+                        axios.get("https://sandbox.tradier.com/v1/markets/quotes", {
+                            params: {
+                                'symbols': symbols,
+                                'greeks': false
+                            },
+                            headers: {
+                                'Authorization': 'Bearer ' + api.getToken(),
+                                'Accept': 'application/json'
+                            }
+                        }).then((response: AxiosResponse) => {
+
+                            //build return array
+                            let quote: Array<JSON> = response.data.quotes.quote; //array of jsons
+                            //options is our pulled array of jsons
+
+                            let retArr: Array<JSON | any> = [];
+
+                            for (let i: number = 0; i < results.length; i++) {
+
+
+                                quote.forEach((quoteJSON: JSON | any) => {
+                                    if (results[i]['option_symbol'] == quoteJSON['symbol']) {
+                                        retArr[i] = { ...results[i], ...quoteJSON };
+                                    }
+                                })
+                            }
+
+                            resolve({ http_id: 200, message: "success", positions: retArr })
+
+
+                        }).catch((err: AxiosError) => {
+
+                            reject({ http_id: 400, message: "Failed to option data" });
+
+                        })
 
                     }
                 })

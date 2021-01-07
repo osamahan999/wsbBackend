@@ -1,11 +1,13 @@
 
-import { AxiosError, AxiosResponse } from "axios";
+import axios, { AxiosError, AxiosResponse } from "axios";
 import { Request, Response } from "express";
+import { createImportSpecifier } from "typescript";
 
 const router = require('express').Router();
 
 const xss = require('xss'); //used for cleaning user input
 const Transactions = require('../src/Transactions');
+const api = require('../../config/apiTokens');
 
 
 
@@ -63,9 +65,8 @@ router.route('/purchaseStock').post(async (req: Request, res: Response) => {
  * User calls this with their login token to make a purchase of an option.
  * 
  * 
- * TODO: get cost of option from API to make sure they paying right amt. Can do this, but this doubles my api calls so not doing it
  */
-router.route('/purchaseOption').post(async (req: Request, res: Response) => {
+router.route('/purchaseOption').post((req: Request, res: Response) => {
 
     //used for authentication
     const cleanToken: string = xss(req.body.token);
@@ -87,20 +88,41 @@ router.route('/purchaseOption').post(async (req: Request, res: Response) => {
         && cleanAmtOfContracts > 0
     ) {
 
-        let response = await Transactions.purchaseOption(
-            cleanToken,
-            cleanPassword,
+        axios.get("https://sandbox.tradier.com/v1/markets/quotes", {
+            params: {
+                'symbols': cleanOptionSymbol
 
-            cleanOptionSymbol,
-            cleanOptionPrice,
-            cleanAmtOfContracts
-        );
+            },
+            headers: {
+                'Authorization': 'Bearer ' + api.getToken(),
+                'Accept': 'application/json'
+            }
+        }).then(async (response: AxiosResponse) => {
 
-        if (response.http_id == 400 || response.http_id == 999)
-            res.status(response.http_id).json(response.message);
-        else {
-            res.json(response.message);
-        }
+            let optionPrice = (+response.data.quotes.quote.last) * 100;
+
+            let purchaseResponse = await Transactions.purchaseOption(
+                cleanToken,
+                cleanPassword,
+
+                cleanOptionSymbol,
+                optionPrice,
+                cleanAmtOfContracts
+            );
+
+            if (purchaseResponse.http_id == 400 || purchaseResponse.http_id == 999)
+                res.status(purchaseResponse.http_id).json(purchaseResponse.message);
+            else {
+                res.json(purchaseResponse.message);
+            }
+        }).catch((err: AxiosError) => {
+
+            res.status(400).json("Error confirming option price");
+
+        })
+
+
+
     } else {
         res.status(400).json("Inputs are invalid");
     }

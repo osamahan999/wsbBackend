@@ -35,10 +35,15 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
+var axios_1 = __importDefault(require("axios"));
 var router = require('express').Router();
 var xss = require('xss'); //used for cleaning user input
 var Transactions = require('../src/Transactions');
+var api = require('../../config/apiTokens');
 /**
  * User calls this with their login token to make a purchase.
  *
@@ -82,38 +87,55 @@ router.route('/purchaseStock').post(function (req, res) { return __awaiter(void 
  * User calls this with their login token to make a purchase of an option.
  *
  *
- * TODO: get cost of option from API to make sure they paying right amt. Can do this, but this doubles my api calls so not doing it
  */
-router.route('/purchaseOption').post(function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
-    var cleanToken, cleanPassword, cleanOptionSymbol, cleanOptionPrice, cleanAmtOfContracts, response;
-    return __generator(this, function (_a) {
-        switch (_a.label) {
-            case 0:
-                cleanToken = xss(req.body.token);
-                cleanPassword = xss(req.body.password);
-                cleanOptionSymbol = xss(req.body.optionSymbol);
-                cleanOptionPrice = +xss(req.body.optionPrice);
-                cleanAmtOfContracts = +xss(req.body.amtOfContracts);
-                if (!(cleanOptionPrice != 0 && cleanOptionSymbol.length != 0
-                    && cleanAmtOfContracts != 0
-                    && cleanToken.length != 0 && cleanPassword.length != 0
-                    && cleanAmtOfContracts > 0)) return [3 /*break*/, 2];
-                return [4 /*yield*/, Transactions.purchaseOption(cleanToken, cleanPassword, cleanOptionSymbol, cleanOptionPrice, cleanAmtOfContracts)];
-            case 1:
-                response = _a.sent();
-                if (response.http_id == 400 || response.http_id == 999)
-                    res.status(response.http_id).json(response.message);
-                else {
-                    res.json(response.message);
+router.route('/purchaseOption').post(function (req, res) {
+    //used for authentication
+    var cleanToken = xss(req.body.token);
+    var cleanPassword = xss(req.body.password);
+    //used for purchase
+    var cleanOptionSymbol = xss(req.body.optionSymbol);
+    var cleanOptionPrice = +xss(req.body.optionPrice); //+'string' casts to number
+    var cleanAmtOfContracts = +xss(req.body.amtOfContracts);
+    /**
+     * Make sure input is not null or empty
+     */
+    if (cleanOptionPrice != 0 && cleanOptionSymbol.length != 0
+        && cleanAmtOfContracts != 0
+        && cleanToken.length != 0 && cleanPassword.length != 0
+        && cleanAmtOfContracts > 0) {
+        axios_1.default.get("https://sandbox.tradier.com/v1/markets/quotes", {
+            params: {
+                'symbols': cleanOptionSymbol
+            },
+            headers: {
+                'Authorization': 'Bearer ' + api.getToken(),
+                'Accept': 'application/json'
+            }
+        }).then(function (response) { return __awaiter(void 0, void 0, void 0, function () {
+            var optionPrice, purchaseResponse;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        optionPrice = (+response.data.quotes.quote.last) * 100;
+                        return [4 /*yield*/, Transactions.purchaseOption(cleanToken, cleanPassword, cleanOptionSymbol, optionPrice, cleanAmtOfContracts)];
+                    case 1:
+                        purchaseResponse = _a.sent();
+                        if (purchaseResponse.http_id == 400 || purchaseResponse.http_id == 999)
+                            res.status(purchaseResponse.http_id).json(purchaseResponse.message);
+                        else {
+                            res.json(purchaseResponse.message);
+                        }
+                        return [2 /*return*/];
                 }
-                return [3 /*break*/, 3];
-            case 2:
-                res.status(400).json("Inputs are invalid");
-                _a.label = 3;
-            case 3: return [2 /*return*/];
-        }
-    });
-}); });
+            });
+        }); }).catch(function (err) {
+            res.status(400).json("Error confirming option price");
+        });
+    }
+    else {
+        res.status(400).json("Inputs are invalid");
+    }
+});
 /**
  * Gets a user's purchases of a specific stock
  */
