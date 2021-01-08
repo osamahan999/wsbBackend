@@ -1,23 +1,10 @@
 
-import { AxiosError, AxiosResponse } from "axios";
 import { Request, Response } from "express";
 
 const router = require('express').Router();
 
 const xss = require('xss'); //used for cleaning user input
-
-//For api tokens
-const api = require('../../config/apiTokens');
-
-
-const axios = require('axios').default;
-
-
-/**
- * https://stackoverflow.com/questions/35612428/call-async-await-functions-in-parallel
- * 
- * for parallel http requests
- */
+const StockData = require('../src/StockData');
 
 
 /**
@@ -27,31 +14,13 @@ const axios = require('axios').default;
  * @param {string} input
  * @return {Array<JSON>} stocks 
  */
-router.route('/searchBySymbol').get((req: Request, res: Response) => {
+router.route('/searchBySymbol').get(async (req: Request, res: Response) => {
 
     let searchInput: string = xss(req.query.input);
 
-    axios.get("https://sandbox.tradier.com/v1/markets/search", {
-        params: {
-            'q': searchInput,
-            'indexes': false
-        },
-        headers: {
-            'Authorization': 'Bearer ' + api.getToken(),
-            'Accept': 'application/json'
-        }
-    }).then((response: AxiosResponse) => {
-        let stocks: Array<JSON> = (response.data.securities.security);
-        let i = stocks.length;
+    let response = await StockData.findBySymbol(searchInput);
 
-        i > 4 ? res.json(stocks.slice(0, 4)) : res.json(stocks);
-
-
-    }).catch((err: AxiosError) => {
-
-        res.status(400).json("empty");
-
-    })
+    res.status(response.http_id).json(response.stocks);
 
 })
 
@@ -61,31 +30,13 @@ router.route('/searchBySymbol').get((req: Request, res: Response) => {
  * @param {string} stock
  * @return {JSON} quote
  */
-router.route('/getStockQuote').get((req: Request, res: Response) => {
+router.route('/getStockQuote').get(async (req: Request, res: Response) => {
 
     let stock: string = xss(req.query.symbol);
+    let response = await StockData.getQuoteBySymbol(stock);
 
+    res.status(response.http_id).json(response.quotes);
 
-
-    axios.get("https://sandbox.tradier.com/v1/markets/quotes", {
-        params: {
-            'symbols': stock,
-            'greeks': true
-        },
-        headers: {
-            'Authorization': 'Bearer ' + api.getToken(),
-            'Accept': 'application/json'
-        }
-    }).then((response: AxiosResponse) => {
-        let quote: JSON = response.data.quotes.quote;
-        res.json(quote);
-
-
-    }).catch((err: AxiosError) => {
-
-        res.status(400).json(err);
-
-    })
 
 })
 
@@ -97,24 +48,13 @@ router.route('/getStockQuote').get((req: Request, res: Response) => {
  * @param {string} symbol
  * @returns {array<string>} dates
  */
-router.route('/getExpirations').get((req: Request, res: Response) => {
+router.route('/getExpirations').get(async (req: Request, res: Response) => {
     let stock: string = xss(req.query.symbol);
 
 
-    axios.get("https://sandbox.tradier.com/v1/markets/options/expirations", {
-        params: {
-            'symbol': stock
-        },
-        headers: {
-            'Authorization': 'Bearer ' + api.getToken(),
-            'Accept': 'application/json'
-        }
-    }).then((response: AxiosResponse) => {
-        res.json(response.data.expirations.date);
-    }).catch((error: AxiosError) => {
-        res.status(400).json("Error getting dates");
-    })
+    let response = await StockData.getOptionExpirationsBySymbol(stock);
 
+    res.status(response.http_id).json(response.expirations);
 })
 
 
@@ -127,46 +67,15 @@ router.route('/getExpirations').get((req: Request, res: Response) => {
  * 
  * @returns {array<JSON>} option chain
  */
-router.route('/getOptionsOnDate').get((req: Request, res: Response) => {
+router.route('/getOptionsOnDate').get(async (req: Request, res: Response) => {
 
     let stock: string = xss(req.query.symbol);
     let expiration: string = xss(req.query.expiration);
     let optionType: string = xss(req.query.optionType);
 
-    axios.get("https://sandbox.tradier.com/v1/markets/options/chains", {
-        params: {
-            'symbol': stock,
-            'expiration': expiration,
-            'greeks': true
-        },
-        headers: {
-            'Authorization': 'Bearer ' + api.getToken(),
-            'Accept': 'application/json'
-        }
-    }).then((response: AxiosResponse) => {
+    let response = await StockData.getOptionsOnDate(stock, expiration, optionType);
 
-        let options: Array<JSON> = response.data.options.option;
-
-        /**
-         * If optionType is call or put, return the options filtered for the specified type
-         */
-        if (optionType == 'call' || optionType == 'put') {
-            res.json(options.filter((option: JSON | any) => option.option_type.includes(optionType)))
-        }
-        else if (optionType == 'any') {
-            res.json(options);
-        } else {
-            res.status(400).json("Invalid option type")
-        }
-
-
-
-    }).catch((err: AxiosError) => {
-
-        res.status(400).json("Error getting options");
-
-    })
-
+    res.status(response.http_id).json(response.options);
 })
 
 
