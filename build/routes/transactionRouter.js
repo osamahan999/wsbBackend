@@ -43,6 +43,7 @@ var axios_1 = __importDefault(require("axios"));
 var router = require('express').Router();
 var xss = require('xss'); //used for cleaning user input
 var Transactions = require('../src/Transactions');
+var StockData = require('../src/StockData');
 var api = require('../../config/apiTokens');
 /**
  * User calls this with their login token to make a purchase.
@@ -52,7 +53,7 @@ var api = require('../../config/apiTokens');
  * TODO: get cost of stock from API to make sure they paying right amt. Can do this, but this doubles my api calls so not doing it
  */
 router.route('/purchaseStock').post(function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
-    var cleanToken, cleanPassword, cleanStockSymbol, cleanStockName, cleanStockPrice, cleanAmtOfStocks, cleanExchange, response;
+    var cleanToken, cleanPassword, cleanStockSymbol, cleanStockName, cleanAmtOfStocks, cleanExchange, costOfStock, stockPrice, response;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -60,26 +61,62 @@ router.route('/purchaseStock').post(function (req, res) { return __awaiter(void 
                 cleanPassword = xss(req.body.password);
                 cleanStockSymbol = xss(req.body.stockSymbol);
                 cleanStockName = xss(req.body.stockName);
-                cleanStockPrice = +xss(req.body.stockPrice);
                 cleanAmtOfStocks = +xss(req.body.amtOfStocks);
                 cleanExchange = xss(req.body.exchange);
-                if (!(cleanStockPrice != 0 && cleanStockName.length != 0
+                return [4 /*yield*/, StockData.getQuoteBySymbol(cleanStockSymbol)];
+            case 1:
+                costOfStock = +(_a.sent()).quotes.ask;
+                return [4 /*yield*/, StockData.getQuoteBySymbol(cleanStockSymbol)];
+            case 2:
+                stockPrice = +(_a.sent());
+                if (!(costOfStock != 0 && cleanStockName.length != 0
                     && cleanAmtOfStocks != 0 && cleanExchange.length != 0
                     && cleanToken.length != 0 && cleanPassword.length != 0
-                    && cleanAmtOfStocks > 0)) return [3 /*break*/, 2];
-                return [4 /*yield*/, Transactions.purchaseStock(cleanToken, cleanPassword, cleanStockSymbol, cleanStockName, cleanStockPrice, cleanAmtOfStocks, cleanExchange)];
-            case 1:
+                    && cleanAmtOfStocks > 0)) return [3 /*break*/, 4];
+                return [4 /*yield*/, Transactions.purchaseStock(cleanToken, cleanPassword, cleanStockSymbol, cleanStockName, costOfStock, cleanAmtOfStocks, cleanExchange)];
+            case 3:
                 response = _a.sent();
                 if (response.http_id == 400 || response.http_id == 999)
                     res.status(response.http_id).json(response.message);
                 else {
                     res.json(response.message);
                 }
-                return [3 /*break*/, 3];
-            case 2:
+                return [3 /*break*/, 5];
+            case 4:
                 res.status(400).json("Inputs are invalid");
-                _a.label = 3;
-            case 3: return [2 /*return*/];
+                _a.label = 5;
+            case 5: return [2 /*return*/];
+        }
+    });
+}); });
+/**
+ * Sell a stock
+ */
+router.route('/sellStock').post(function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
+    var cleanUserId, cleanPurchaseId, cleanAmtToSell, cleanStockSymbol, costOfStock, response;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                cleanUserId = +xss(req.body.userId);
+                cleanPurchaseId = +xss(req.body.purchaseId);
+                cleanAmtToSell = +xss(req.body.amtToSell);
+                cleanStockSymbol = xss(req.body.stockSymbol);
+                return [4 /*yield*/, StockData.getQuoteBySymbol(cleanStockSymbol)];
+            case 1:
+                costOfStock = +(_a.sent()).quotes.ask;
+                if (!(cleanUserId >= 0 &&
+                    (cleanStockSymbol != undefined && cleanStockSymbol.length != 0)
+                    && cleanAmtToSell != 0 && cleanPurchaseId >= 0 &&
+                    (costOfStock != undefined && costOfStock >= 0))) return [3 /*break*/, 3];
+                return [4 /*yield*/, Transactions.sellStock(cleanUserId, cleanPurchaseId, cleanAmtToSell, costOfStock)];
+            case 2:
+                response = _a.sent();
+                res.status(response.http_id).json(response.message);
+                return [3 /*break*/, 4];
+            case 3:
+                res.status(400).json("Bad input");
+                _a.label = 4;
+            case 4: return [2 /*return*/];
         }
     });
 }); });

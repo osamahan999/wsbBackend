@@ -39,14 +39,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var router = require('express').Router();
 var xss = require('xss'); //used for cleaning user input
 var StockData = require('../src/StockData');
-//For api tokens
-var api = require('../../config/apiTokens');
-var axios = require('axios').default;
-/**
- * https://stackoverflow.com/questions/35612428/call-async-await-functions-in-parallel
- *
- * for parallel http requests
- */
 /**
  *
  * Searches for stocks that match the input from the user

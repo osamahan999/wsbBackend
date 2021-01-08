@@ -83,6 +83,26 @@ var purchaseStock = function (token, password, stockSymbol, stockName, stockPric
         return err;
     });
 };
+var sellStock = function (userId, purchaseId, amtToSell, costOfStock) {
+    var query = "CALL sell_stock(?, ?, ?, ?)";
+    return new Promise(function (resolve, reject) {
+        pool.getConnection(function (error, connection) {
+            if (error)
+                reject({ http_id: 999, message: "Failed to get connection from pool" });
+            else {
+                connection.query(query, [userId, purchaseId, amtToSell, costOfStock], function (err, results, fields) {
+                    if (err)
+                        reject({ http_id: 400, message: "Failed to sell stock" });
+                    else {
+                        resolve({ http_id: 200, message: "Sold successful" });
+                    }
+                });
+            }
+        });
+    }).catch(function (err) {
+        return err;
+    });
+};
 /**
  * Checks if user is authenticated. If so purchases a stock if the user has the money.
  *
@@ -252,5 +272,6 @@ module.exports = {
     purchaseStock: purchaseStock,
     purchaseOption: purchaseOption,
     getUserPositionsSpecificStock: getUserPositionsSpecificStock,
-    getUserPositionsSpecificOption: getUserPositionsSpecificOption
+    getUserPositionsSpecificOption: getUserPositionsSpecificOption,
+    sellStock: sellStock
 };

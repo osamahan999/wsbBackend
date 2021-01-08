@@ -99,6 +99,14 @@ var getOptionExpirationsBySymbol = function (symbol) {
         return err;
     });
 };
+/**
+ *
+ * @param symbol Stock ticker
+ * @param expiration Valid expiration date for said ticker
+ * @param optionType call | put | any
+ *
+ * @return {JSON} {http_id: 200|400, message: "Success"|"Failed", options<Array<JSON>> : [{}]}
+ */
 var getOptionsOnDate = function (symbol, expiration, optionType) {
     return new Promise(function (resolve, reject) {
         axios.get("https://sandbox.tradier.com/v1/markets/options/chains", {

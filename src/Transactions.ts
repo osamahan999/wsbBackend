@@ -1,7 +1,6 @@
 
 import { AxiosError, AxiosResponse } from 'axios';
 import { MysqlError, Pool, PoolConnection } from 'mysql';
-import { forEachChild, ObjectFlags } from 'typescript';
 
 const pool: Pool = require('../../config/mysqlConnector.js'); //connection pool
 const LoginAndRegisteration = require("./LoginAndRegistration");
@@ -97,6 +96,31 @@ const purchaseStock = (
     })
 }
 
+
+const sellStock = (userId: number, purchaseId: number,
+    amtToSell: number, costOfStock: number) => {
+
+    const query = "CALL sell_stock(?, ?, ?, ?)";
+
+    return new Promise((resolve, reject) => {
+        pool.getConnection((error: MysqlError, connection: PoolConnection) => {
+            if (error) reject({ http_id: 999, message: "Failed to get connection from pool" });
+            else {
+                connection.query(query, [userId, purchaseId, amtToSell, costOfStock],
+                    (err, results, fields) => {
+
+                        if (err) reject({ http_id: 400, message: "Failed to sell stock" });
+                        else {
+                            resolve({ http_id: 200, message: "Sold successful" });
+                        }
+                    })
+            }
+        })
+    }).catch(err => {
+        return err
+    });
+
+}
 
 
 /**
@@ -314,5 +338,6 @@ module.exports = {
     purchaseStock,
     purchaseOption,
     getUserPositionsSpecificStock,
-    getUserPositionsSpecificOption
+    getUserPositionsSpecificOption,
+    sellStock
 }

@@ -1,12 +1,15 @@
 
 import axios, { AxiosError, AxiosResponse } from "axios";
 import { Request, Response } from "express";
-import { createImportSpecifier } from "typescript";
 
 const router = require('express').Router();
-
 const xss = require('xss'); //used for cleaning user input
+
+
 const Transactions = require('../src/Transactions');
+const StockData = require('../src/StockData');
+
+
 const api = require('../../config/apiTokens');
 
 
@@ -27,15 +30,16 @@ router.route('/purchaseStock').post(async (req: Request, res: Response) => {
     //used for purchase
     const cleanStockSymbol: string = xss(req.body.stockSymbol);
     const cleanStockName: string = xss(req.body.stockName);
-    const cleanStockPrice: number = +xss(req.body.stockPrice); //+'string' casts to number
     const cleanAmtOfStocks: number = +xss(req.body.amtOfStocks);
     const cleanExchange: string = xss(req.body.exchange);
+
+    const costOfStock: number = +(await StockData.getQuoteBySymbol(cleanStockSymbol)).quotes.ask; //get current stock price
 
     /**
      * Make sure input is not null or empty
      */
     if (
-        cleanStockPrice != 0 && cleanStockName.length != 0
+        costOfStock != 0 && cleanStockName.length != 0
         && cleanAmtOfStocks != 0 && cleanExchange.length != 0
         && cleanToken.length != 0 && cleanPassword.length != 0
         && cleanAmtOfStocks > 0
@@ -46,7 +50,7 @@ router.route('/purchaseStock').post(async (req: Request, res: Response) => {
             cleanPassword,
             cleanStockSymbol,
             cleanStockName,
-            cleanStockPrice,
+            costOfStock,
             cleanAmtOfStocks,
             cleanExchange
         );
@@ -60,6 +64,38 @@ router.route('/purchaseStock').post(async (req: Request, res: Response) => {
         res.status(400).json("Inputs are invalid");
     }
 })
+
+
+/**
+ * Sell a stock
+ */
+router.route('/sellStock').post(async (req: Request, res: Response) => {
+    const cleanUserId: number = +xss(req.body.userId);
+    const cleanPurchaseId: number = +xss(req.body.purchaseId);
+    const cleanAmtToSell: number = +xss(req.body.amtToSell);
+    const cleanStockSymbol: string = xss(req.body.stockSymbol);
+
+    //pull current cost of stock
+    const costOfStock: number = +(await StockData.getQuoteBySymbol(cleanStockSymbol)).quotes.ask;
+
+    /**
+      * Make sure input is not null or empty
+      */
+    if (
+        cleanUserId >= 0 &&
+        (cleanStockSymbol != undefined && cleanStockSymbol.length != 0)
+        && cleanAmtToSell != 0 && cleanPurchaseId >= 0 &&
+        (costOfStock != undefined && costOfStock >= 0)
+    ) {
+        const response = await Transactions.sellStock(cleanUserId, cleanPurchaseId, cleanAmtToSell, costOfStock);
+        res.status(response.http_id).json(response.message);
+
+    } else {
+        res.status(400).json("Bad input");
+
+    }
+})
+
 
 /**
  * User calls this with their login token to make a purchase of an option.
