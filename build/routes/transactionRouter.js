@@ -53,7 +53,7 @@ var api = require('../../config/apiTokens');
  * TODO: get cost of stock from API to make sure they paying right amt. Can do this, but this doubles my api calls so not doing it
  */
 router.route('/purchaseStock').post(function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
-    var cleanToken, cleanPassword, cleanStockSymbol, cleanStockName, cleanAmtOfStocks, cleanExchange, costOfStock, stockPrice, response;
+    var cleanToken, cleanPassword, cleanStockSymbol, cleanStockName, cleanAmtOfStocks, cleanExchange, costOfStock, response;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -66,26 +66,23 @@ router.route('/purchaseStock').post(function (req, res) { return __awaiter(void 
                 return [4 /*yield*/, StockData.getQuoteBySymbol(cleanStockSymbol)];
             case 1:
                 costOfStock = +(_a.sent()).quotes.ask;
-                return [4 /*yield*/, StockData.getQuoteBySymbol(cleanStockSymbol)];
-            case 2:
-                stockPrice = +(_a.sent());
                 if (!(costOfStock != 0 && cleanStockName.length != 0
                     && cleanAmtOfStocks != 0 && cleanExchange.length != 0
                     && cleanToken.length != 0 && cleanPassword.length != 0
-                    && cleanAmtOfStocks > 0)) return [3 /*break*/, 4];
+                    && cleanAmtOfStocks > 0)) return [3 /*break*/, 3];
                 return [4 /*yield*/, Transactions.purchaseStock(cleanToken, cleanPassword, cleanStockSymbol, cleanStockName, costOfStock, cleanAmtOfStocks, cleanExchange)];
-            case 3:
+            case 2:
                 response = _a.sent();
                 if (response.http_id == 400 || response.http_id == 999)
                     res.status(response.http_id).json(response.message);
                 else {
                     res.json(response.message);
                 }
-                return [3 /*break*/, 5];
-            case 4:
+                return [3 /*break*/, 4];
+            case 3:
                 res.status(400).json("Inputs are invalid");
-                _a.label = 5;
-            case 5: return [2 /*return*/];
+                _a.label = 4;
+            case 4: return [2 /*return*/];
         }
     });
 }); });
