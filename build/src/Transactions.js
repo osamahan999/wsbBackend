@@ -218,15 +218,21 @@ var purchaseOption = function (token, password, optionSymbol, optionPrice, amtOf
  */
 var getUserPositionsSpecificStockOrAll = function (userId, stockSymbol) {
     var query;
-    stockSymbol == null
-        ? query = "SELECT * FROM purchase WHERE (user_id = ?) AND (amt_of_purchase != amt_sold)" //all stock positions not sold
-        : query = "SELECT * FROM purchase WHERE (user_id = ?) AND (stock_id IN (SELECT stock_id FROM stock WHERE stock_symbol = ?)) AND (amt_of_purchase != amt_sold)";
+    var input;
+    if (stockSymbol == null) {
+        query = "SELECT * FROM purchase NATURAL JOIN stock WHERE (user_id = ?) AND (amt_of_purchase != amt_sold)"; //all stock positions not sold
+        input = [userId];
+    }
+    else {
+        query = "SELECT * FROM purchase NATURAL JOIN stock WHERE (user_id = ?) AND (stock_symbol = ?) AND (amt_of_purchase != amt_sold)";
+        input = [userId, stockSymbol];
+    }
     return new Promise(function (resolve, reject) {
         pool.getConnection(function (error, connection) {
             if (error)
                 reject({ http_id: 999, message: "Failed to get connection from pool" });
             else {
-                connection.query(query, [userId, stockSymbol], function (err, results, fields) {
+                connection.query(query, input, function (err, results, fields) {
                     if (err)
                         reject({ http_id: 400, message: "Failed to get user positions" });
                     else {
@@ -247,23 +253,32 @@ var getUserPositionsSpecificStockOrAll = function (userId, stockSymbol) {
  * @param userId
  * @param stockSymbol
  */
-var getUserPositionsSpecificOption = function (userId, optionSymbol) {
-    var query = "SELECT * FROM option_purchase NATURAL JOIN contract_option"
-        + " WHERE (amt_of_contracts != amt_sold) AND (user_id = ?) AND (option_symbol LIKE concat(?, '%'))";
+var getUserPositionsSpecificOptionOrAll = function (userId, optionSymbol) {
+    var query;
+    var input;
+    if (optionSymbol == null) {
+        query = "SELECT * FROM option_purchase NATURAL JOIN contract_option WHERE (amt_of_contracts != amt_sold) AND user_id = ?";
+        input = [userId];
+    }
+    else {
+        query = "SELECT * FROM option_purchase NATURAL JOIN contract_option WHERE" +
+            " (amt_of_contracts != amt_sold) AND (user_id = ?) AND (option_symbol LIKE concat(?, '%'))";
+        input = [userId, optionSymbol];
+    }
     return new Promise(function (resolve, reject) {
         pool.getConnection(function (error, connection) {
             if (error)
                 reject({ http_id: 999, message: "Failed to get connection from pool" });
             else {
-                connection.query(query, [userId, optionSymbol], function (err, results, fields) {
+                connection.query(query, input, function (err, results, fields) {
                     if (err) {
                         reject({ http_id: 400, message: "Failed to get user positions" });
                     }
                     else {
                         if (results.length != null && results.length != 0) {
                             /**
-                                                    * The option symbols that we need the data for
-                                                    */
+                            * The option symbols that we need the data for
+                            */
                             var symbols = "";
                             for (var i = 0; i < results.length; i++) {
                                 symbols += results[i]['option_symbol'];
@@ -325,7 +340,7 @@ module.exports = {
     purchaseStock: purchaseStock,
     purchaseOption: purchaseOption,
     getUserPositionsSpecificStockOrAll: getUserPositionsSpecificStockOrAll,
-    getUserPositionsSpecificOption: getUserPositionsSpecificOption,
+    getUserPositionsSpecificOptionOrAll: getUserPositionsSpecificOptionOrAll,
     sellStock: sellStock,
     sellContract: sellContract
 };

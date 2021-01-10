@@ -207,6 +207,7 @@ router.route('/purchaseOption').post(function (req, res) {
 });
 /**
  * Gets a user's purchases of a specific stock
+ * TODO: refactor to getAllPositionsOrOne
  */
 router.route('/getSpecificPosition').get(function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
     var cleanUserId, cleanStockSymbol, response;
@@ -235,6 +236,8 @@ router.route('/getSpecificPosition').get(function (req, res) { return __awaiter(
 }); });
 /**
  * Gets a user's purchases of a stock's options
+  * TODO: refactor to getAllContractsOrOne
+
  */
 router.route('/getSpecificOptionPosition').get(function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
     var cleanUserId, cleanStockSymbol, response;
@@ -242,9 +245,9 @@ router.route('/getSpecificOptionPosition').get(function (req, res) { return __aw
         switch (_a.label) {
             case 0:
                 cleanUserId = +xss(req.query.userId);
-                cleanStockSymbol = xss(req.query.stockSymbol);
-                if (!(cleanUserId != 0 && cleanUserId != null && cleanStockSymbol.length > 0)) return [3 /*break*/, 2];
-                return [4 /*yield*/, Transactions.getUserPositionsSpecificOption(cleanUserId, cleanStockSymbol)];
+                req.query.stockSymbol != null ? cleanStockSymbol = xss(req.query.stockSymbol) : cleanStockSymbol = null;
+                if (!(cleanUserId != 0 && cleanUserId != null)) return [3 /*break*/, 2];
+                return [4 /*yield*/, Transactions.getUserPositionsSpecificOptionOrAll(cleanUserId, cleanStockSymbol)];
             case 1:
                 response = _a.sent();
                 if (response.http_id == 400 || response.http_id == 999)

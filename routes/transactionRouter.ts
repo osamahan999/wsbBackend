@@ -204,6 +204,7 @@ router.route('/purchaseOption').post((req: Request, res: Response) => {
 
 /**
  * Gets a user's purchases of a specific stock
+ * TODO: refactor to getAllPositionsOrOne
  */
 router.route('/getSpecificPosition').get(async (req: Request, res: Response) => {
     const cleanUserId = +xss(req.query.userId);
@@ -229,13 +230,17 @@ router.route('/getSpecificPosition').get(async (req: Request, res: Response) => 
 
 /**
  * Gets a user's purchases of a stock's options
+  * TODO: refactor to getAllContractsOrOne
+
  */
 router.route('/getSpecificOptionPosition').get(async (req: Request, res: Response) => {
     const cleanUserId = +xss(req.query.userId);
-    const cleanStockSymbol = xss(req.query.stockSymbol);
+    let cleanStockSymbol: string | null;
 
-    if (cleanUserId != 0 && cleanUserId != null && cleanStockSymbol.length > 0) {
-        let response = await Transactions.getUserPositionsSpecificOption(cleanUserId, cleanStockSymbol);
+    req.query.stockSymbol != null ? cleanStockSymbol = xss(req.query.stockSymbol) : cleanStockSymbol = null;
+
+    if (cleanUserId != 0 && cleanUserId != null) {
+        let response = await Transactions.getUserPositionsSpecificOptionOrAll(cleanUserId, cleanStockSymbol);
 
         if (response.http_id == 400 || response.http_id == 999)
             res.status(response.http_id).json(response.message);

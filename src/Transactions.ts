@@ -270,10 +270,17 @@ const purchaseOption = (
 const getUserPositionsSpecificStockOrAll = (userId: number, stockSymbol: string | null) => {
 
     let query: string;
+    let input: Array<any>;
 
-    stockSymbol == null
-        ? query = "SELECT * FROM purchase WHERE (user_id = ?) AND (amt_of_purchase != amt_sold)" //all stock positions not sold
-        : query = "SELECT * FROM purchase WHERE (user_id = ?) AND (stock_id IN (SELECT stock_id FROM stock WHERE stock_symbol = ?)) AND (amt_of_purchase != amt_sold)";
+
+    if (stockSymbol == null) {
+        query = "SELECT * FROM purchase NATURAL JOIN stock WHERE (user_id = ?) AND (amt_of_purchase != amt_sold)"; //all stock positions not sold
+        input = [userId];
+    } else {
+        query = "SELECT * FROM purchase NATURAL JOIN stock WHERE (user_id = ?) AND (stock_symbol = ?) AND (amt_of_purchase != amt_sold)";
+        input = [userId, stockSymbol];
+    }
+
 
 
     return new Promise((resolve, reject) => {
@@ -281,7 +288,7 @@ const getUserPositionsSpecificStockOrAll = (userId: number, stockSymbol: string 
         pool.getConnection((error: MysqlError, connection: PoolConnection) => {
             if (error) reject({ http_id: 999, message: "Failed to get connection from pool" });
             else {
-                connection.query(query, [userId, stockSymbol], (err, results, fields) => {
+                connection.query(query, input, (err, results, fields) => {
                     if (err)
                         reject({ http_id: 400, message: "Failed to get user positions" });
                     else {
@@ -304,19 +311,27 @@ const getUserPositionsSpecificStockOrAll = (userId: number, stockSymbol: string 
  * @param userId 
  * @param stockSymbol 
  */
-const getUserPositionsSpecificOption = (userId: number, optionSymbol: string) => {
+const getUserPositionsSpecificOptionOrAll = (userId: number, optionSymbol: string | null) => {
 
+    let query: string;
+    let input: Array<any>;
 
-    const query = "SELECT * FROM option_purchase NATURAL JOIN contract_option"
-        + " WHERE (amt_of_contracts != amt_sold) AND (user_id = ?) AND (option_symbol LIKE concat(?, '%'))";
+    if (optionSymbol == null) {
+        query = "SELECT * FROM option_purchase NATURAL JOIN contract_option WHERE (amt_of_contracts != amt_sold) AND user_id = ?";
+        input = [userId];
+    } else {
+        query = "SELECT * FROM option_purchase NATURAL JOIN contract_option WHERE" +
+            " (amt_of_contracts != amt_sold) AND (user_id = ?) AND (option_symbol LIKE concat(?, '%'))";
+        input = [userId, optionSymbol]
 
+    }
 
     return new Promise((resolve, reject) => {
 
         pool.getConnection((error: MysqlError, connection: PoolConnection) => {
             if (error) reject({ http_id: 999, message: "Failed to get connection from pool" });
             else {
-                connection.query(query, [userId, optionSymbol], (err, results, fields) => {
+                connection.query(query, input, (err, results, fields) => {
                     if (err) {
                         reject({ http_id: 400, message: "Failed to get user positions" });
                     }
@@ -325,8 +340,8 @@ const getUserPositionsSpecificOption = (userId: number, optionSymbol: string) =>
                         if (results.length != null && results.length != 0) {
 
                             /**
-                                                    * The option symbols that we need the data for
-                                                    */
+                            * The option symbols that we need the data for
+                            */
                             let symbols: string = "";
                             for (let i = 0; i < results.length; i++) {
                                 symbols += results[i]['option_symbol'];
@@ -403,7 +418,7 @@ module.exports = {
     purchaseStock,
     purchaseOption,
     getUserPositionsSpecificStockOrAll,
-    getUserPositionsSpecificOption,
+    getUserPositionsSpecificOptionOrAll,
     sellStock,
     sellContract
 }
