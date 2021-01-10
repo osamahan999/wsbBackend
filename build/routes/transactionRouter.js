@@ -118,6 +118,41 @@ router.route('/sellStock').post(function (req, res) { return __awaiter(void 0, v
     });
 }); });
 /**
+ * Sell contracts
+ */
+router.route('/sellContract').post(function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
+    var cleanUserId, cleanOptionPurchaseId, cleanAmtToSell, cleanOptionSymbol, costOfContract, response;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                cleanUserId = +xss(req.body.userId);
+                cleanOptionPurchaseId = +xss(req.body.optionPurchaseId);
+                cleanAmtToSell = +xss(req.body.amtToSell);
+                cleanOptionSymbol = xss(req.body.optionSymbol);
+                return [4 /*yield*/, (StockData.getQuoteBySymbol(cleanOptionSymbol))];
+            case 1:
+                costOfContract = +(_a.sent()).quotes.ask;
+                if (!isNaN(costOfContract)) return [3 /*break*/, 2];
+                res.status(400).json("Expired");
+                return [3 /*break*/, 5];
+            case 2:
+                if (!(cleanUserId >= 0 &&
+                    (cleanOptionSymbol != undefined && cleanOptionSymbol.length != 0)
+                    && cleanAmtToSell != 0 && cleanOptionPurchaseId >= 0 &&
+                    (costOfContract != undefined && costOfContract >= 0))) return [3 /*break*/, 4];
+                return [4 /*yield*/, Transactions.sellContract(cleanUserId, cleanOptionPurchaseId, cleanAmtToSell, costOfContract)];
+            case 3:
+                response = _a.sent();
+                res.status(response.http_id).json(response.message);
+                return [3 /*break*/, 5];
+            case 4:
+                res.status(400).json("Bad input");
+                _a.label = 5;
+            case 5: return [2 /*return*/];
+        }
+    });
+}); });
+/**
  * User calls this with their login token to make a purchase of an option.
  *
  *
@@ -179,9 +214,10 @@ router.route('/getSpecificPosition').get(function (req, res) { return __awaiter(
         switch (_a.label) {
             case 0:
                 cleanUserId = +xss(req.query.userId);
-                cleanStockSymbol = xss(req.query.stockSymbol);
-                if (!(cleanUserId != 0 && cleanUserId != null && cleanStockSymbol.length > 0)) return [3 /*break*/, 2];
-                return [4 /*yield*/, Transactions.getUserPositionsSpecificStock(cleanUserId, cleanStockSymbol)];
+                //if it is not null, clean it, else set the input var as null
+                req.query.stockSymbol != null ? cleanStockSymbol = xss(req.query.stockSymbol) : cleanStockSymbol = null;
+                if (!(cleanUserId != 0 && cleanUserId != null)) return [3 /*break*/, 2];
+                return [4 /*yield*/, Transactions.getUserPositionsSpecificStockOrAll(cleanUserId, cleanStockSymbol)];
             case 1:
                 response = _a.sent();
                 if (response.http_id == 400 || response.http_id == 999)

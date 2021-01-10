@@ -97,6 +97,15 @@ const purchaseStock = (
 }
 
 
+/**
+ * 
+ * @param userId 
+ * @param purchaseId 
+ * @param amtToSell 
+ * @param costOfStock 
+ * 
+ * @returns {JSON} {http_id: 999|400|200, message: "Failed to get connection from pool"|"Failed to sell stock"|"Sold successful"}
+ */
 const sellStock = (userId: number, purchaseId: number,
     amtToSell: number, costOfStock: number) => {
 
@@ -121,6 +130,46 @@ const sellStock = (userId: number, purchaseId: number,
     });
 
 }
+
+
+
+/**
+ * 
+ * @param userId 
+ * @param optionPurchaseId 
+ * @param amtToSell 
+ * @param costOfContract
+ * 
+ * @returns {JSON} {http_id: 999|400|200, message: "Failed to get connection from pool"|"Failed to sell contracts"|"Sold successful"}
+ */
+const sellContract = (userId: number, optionPurchaseId: number,
+    amtToSell: number, costOfContract: number) => {
+
+    const query = "CALL sell_contract(?, ?, ?, ?)";
+
+
+
+    return new Promise((resolve, reject) => {
+        pool.getConnection((error: MysqlError, connection: PoolConnection) => {
+            if (error) reject({ http_id: 999, message: "Failed to get connection from pool" });
+            else {
+                connection.query(query, [userId, optionPurchaseId, amtToSell, (costOfContract * 100)],
+                    (err, results, fields) => {
+                        if (err || (results[0] != null && results[0][0].Error)) reject({ http_id: 400, message: "Failed to sell contracts" });
+                        else {
+                            resolve({ http_id: 200, message: "Sold successful" });
+                        }
+                    })
+            }
+        })
+    }).catch(err => {
+        return err
+    });
+
+}
+
+
+
 
 
 /**
@@ -214,11 +263,17 @@ const purchaseOption = (
 /**
  * Get the user's stock positions for a specific ticker
  * @param userId 
- * @param stockSymbol 
+ * @param stockSymbol string or null -> if null, returns all stock positions, else returns the specific symbol
+ * 
+ * @returns {JSON} {http_id : 200|400|999, message: "success" | "Failed to get user positions" | "Failed to get connection from pool", positions: [{}]}
  */
-const getUserPositionsSpecificStock = (userId: number, stockSymbol: string) => {
+const getUserPositionsSpecificStockOrAll = (userId: number, stockSymbol: string | null) => {
 
-    const query = "SELECT * FROM purchase WHERE (user_id = ?) AND (stock_id IN (SELECT stock_id FROM stock WHERE stock_symbol = ?))";
+    let query: string;
+
+    stockSymbol == null
+        ? query = "SELECT * FROM purchase WHERE (user_id = ?) AND (amt_of_purchase != amt_sold)" //all stock positions not sold
+        : query = "SELECT * FROM purchase WHERE (user_id = ?) AND (stock_id IN (SELECT stock_id FROM stock WHERE stock_symbol = ?)) AND (amt_of_purchase != amt_sold)";
 
 
     return new Promise((resolve, reject) => {
@@ -242,8 +297,6 @@ const getUserPositionsSpecificStock = (userId: number, stockSymbol: string) => {
     }).catch((err) => {
         return err;
     })
-
-
 }
 
 /**
@@ -254,9 +307,8 @@ const getUserPositionsSpecificStock = (userId: number, stockSymbol: string) => {
 const getUserPositionsSpecificOption = (userId: number, optionSymbol: string) => {
 
 
-    const query = "SELECT option_symbol, date_purchased, price_at_purchase, amt_of_contracts, amt_sold FROM option_purchase NATURAL JOIN contract_option"
-        + " WHERE (user_id = ?) AND "
-        + "(option_id IN (SELECT option_id FROM contract_option WHERE option_symbol LIKE concat(?, '%')))";
+    const query = "SELECT * FROM option_purchase NATURAL JOIN contract_option"
+        + " WHERE (amt_of_contracts != amt_sold) AND (user_id = ?) AND (option_symbol LIKE concat(?, '%'))";
 
 
     return new Promise((resolve, reject) => {
@@ -270,54 +322,67 @@ const getUserPositionsSpecificOption = (userId: number, optionSymbol: string) =>
                     }
                     else {
 
+                        if (results.length != null && results.length != 0) {
 
-
-                        /**
-                         * The option symbols that we need the data for
-                         */
-                        let symbols: string = "";
-                        for (let i = 0; i < results.length; i++) {
-                            symbols += results[i]['option_symbol'];
-                            i != results.length - 1 && (symbols += ",");
-                        }
-                        /**
-                         * Get the option details for the options the user owns
-                         */
-                        axios.get("https://sandbox.tradier.com/v1/markets/quotes", {
-                            params: {
-                                'symbols': symbols,
-                                'greeks': false
-                            },
-                            headers: {
-                                'Authorization': 'Bearer ' + api.getToken(),
-                                'Accept': 'application/json'
+                            /**
+                                                    * The option symbols that we need the data for
+                                                    */
+                            let symbols: string = "";
+                            for (let i = 0; i < results.length; i++) {
+                                symbols += results[i]['option_symbol'];
+                                i != results.length - 1 && (symbols += ",");
                             }
-                        }).then((response: AxiosResponse) => {
+                            /**
+                             * Get the option details for the options the user owns
+                             */
+                            axios.get("https://sandbox.tradier.com/v1/markets/quotes", {
+                                params: {
+                                    'symbols': symbols,
+                                    'greeks': false
+                                },
+                                headers: {
+                                    'Authorization': 'Bearer ' + api.getToken(),
+                                    'Accept': 'application/json'
+                                }
+                            }).then((response: AxiosResponse) => {
 
-                            //build return array
-                            let quote: Array<JSON> = response.data.quotes.quote; //array of jsons
-                            //options is our pulled array of jsons
+                                //build return array
+                                let quote: Array<JSON> | JSON = response.data.quotes.quote; //array of jsons
 
-                            let retArr: Array<JSON | any> = [];
-
-                            for (let i: number = 0; i < results.length; i++) {
+                                if (quote instanceof Array) {
+                                    //options is our pulled array of jsons
 
 
-                                quote.forEach((quoteJSON: JSON | any) => {
-                                    if (results[i]['option_symbol'] == quoteJSON['symbol']) {
-                                        retArr[i] = { ...results[i], ...quoteJSON };
+                                    let retArr: Array<JSON | any> = [];
+
+                                    for (let i: number = 0; i < results.length; i++) {
+
+
+                                        quote.forEach((quoteJSON: JSON | any) => {
+                                            if (results[i]['option_symbol'] == quoteJSON['symbol']) {
+                                                retArr[i] = { ...results[i], ...quoteJSON };
+                                            }
+                                        })
                                     }
-                                })
-                            }
 
-                            resolve({ http_id: 200, message: "success", positions: retArr })
+                                    resolve({ http_id: 200, message: "success", positions: retArr })
+                                } else {
+                                    //If only one option
+                                    resolve({ http_id: 200, message: "success", positions: [{ ...results[0], ...quote }] })
+                                }
 
 
-                        }).catch((err: AxiosError) => {
+                            }).catch((err: AxiosError) => {
+                                reject({ http_id: 400, message: "Failed to get option data" });
 
-                            reject({ http_id: 400, message: "Failed to option data" });
+                            })
 
-                        })
+                        } else {
+                            resolve({ http_id: 200, message: "success", positions: [] })
+
+                        }
+
+
 
                     }
                 })
@@ -337,7 +402,8 @@ const getUserPositionsSpecificOption = (userId: number, optionSymbol: string) =>
 module.exports = {
     purchaseStock,
     purchaseOption,
-    getUserPositionsSpecificStock,
+    getUserPositionsSpecificStockOrAll,
     getUserPositionsSpecificOption,
-    sellStock
+    sellStock,
+    sellContract
 }

@@ -83,6 +83,15 @@ var purchaseStock = function (token, password, stockSymbol, stockName, stockPric
         return err;
     });
 };
+/**
+ *
+ * @param userId
+ * @param purchaseId
+ * @param amtToSell
+ * @param costOfStock
+ *
+ * @returns {JSON} {http_id: 999|400|200, message: "Failed to get connection from pool"|"Failed to sell stock"|"Sold successful"}
+ */
 var sellStock = function (userId, purchaseId, amtToSell, costOfStock) {
     var query = "CALL sell_stock(?, ?, ?, ?)";
     return new Promise(function (resolve, reject) {
@@ -93,6 +102,35 @@ var sellStock = function (userId, purchaseId, amtToSell, costOfStock) {
                 connection.query(query, [userId, purchaseId, amtToSell, costOfStock], function (err, results, fields) {
                     if (err)
                         reject({ http_id: 400, message: "Failed to sell stock" });
+                    else {
+                        resolve({ http_id: 200, message: "Sold successful" });
+                    }
+                });
+            }
+        });
+    }).catch(function (err) {
+        return err;
+    });
+};
+/**
+ *
+ * @param userId
+ * @param optionPurchaseId
+ * @param amtToSell
+ * @param costOfContract
+ *
+ * @returns {JSON} {http_id: 999|400|200, message: "Failed to get connection from pool"|"Failed to sell contracts"|"Sold successful"}
+ */
+var sellContract = function (userId, optionPurchaseId, amtToSell, costOfContract) {
+    var query = "CALL sell_contract(?, ?, ?, ?)";
+    return new Promise(function (resolve, reject) {
+        pool.getConnection(function (error, connection) {
+            if (error)
+                reject({ http_id: 999, message: "Failed to get connection from pool" });
+            else {
+                connection.query(query, [userId, optionPurchaseId, amtToSell, (costOfContract * 100)], function (err, results, fields) {
+                    if (err || (results[0] != null && results[0][0].Error))
+                        reject({ http_id: 400, message: "Failed to sell contracts" });
                     else {
                         resolve({ http_id: 200, message: "Sold successful" });
                     }
@@ -174,10 +212,15 @@ var purchaseOption = function (token, password, optionSymbol, optionPrice, amtOf
 /**
  * Get the user's stock positions for a specific ticker
  * @param userId
- * @param stockSymbol
+ * @param stockSymbol string or null -> if null, returns all stock positions, else returns the specific symbol
+ *
+ * @returns {JSON} {http_id : 200|400|999, message: "success" | "Failed to get user positions" | "Failed to get connection from pool", positions: [{}]}
  */
-var getUserPositionsSpecificStock = function (userId, stockSymbol) {
-    var query = "SELECT * FROM purchase WHERE (user_id = ?) AND (stock_id IN (SELECT stock_id FROM stock WHERE stock_symbol = ?))";
+var getUserPositionsSpecificStockOrAll = function (userId, stockSymbol) {
+    var query;
+    stockSymbol == null
+        ? query = "SELECT * FROM purchase WHERE (user_id = ?) AND (amt_of_purchase != amt_sold)" //all stock positions not sold
+        : query = "SELECT * FROM purchase WHERE (user_id = ?) AND (stock_id IN (SELECT stock_id FROM stock WHERE stock_symbol = ?)) AND (amt_of_purchase != amt_sold)";
     return new Promise(function (resolve, reject) {
         pool.getConnection(function (error, connection) {
             if (error)
@@ -205,9 +248,8 @@ var getUserPositionsSpecificStock = function (userId, stockSymbol) {
  * @param stockSymbol
  */
 var getUserPositionsSpecificOption = function (userId, optionSymbol) {
-    var query = "SELECT option_symbol, date_purchased, price_at_purchase, amt_of_contracts, amt_sold FROM option_purchase NATURAL JOIN contract_option"
-        + " WHERE (user_id = ?) AND "
-        + "(option_id IN (SELECT option_id FROM contract_option WHERE option_symbol LIKE concat(?, '%')))";
+    var query = "SELECT * FROM option_purchase NATURAL JOIN contract_option"
+        + " WHERE (amt_of_contracts != amt_sold) AND (user_id = ?) AND (option_symbol LIKE concat(?, '%'))";
     return new Promise(function (resolve, reject) {
         pool.getConnection(function (error, connection) {
             if (error)
@@ -218,45 +260,56 @@ var getUserPositionsSpecificOption = function (userId, optionSymbol) {
                         reject({ http_id: 400, message: "Failed to get user positions" });
                     }
                     else {
-                        /**
-                         * The option symbols that we need the data for
-                         */
-                        var symbols = "";
-                        for (var i = 0; i < results.length; i++) {
-                            symbols += results[i]['option_symbol'];
-                            i != results.length - 1 && (symbols += ",");
-                        }
-                        /**
-                         * Get the option details for the options the user owns
-                         */
-                        axios.get("https://sandbox.tradier.com/v1/markets/quotes", {
-                            params: {
-                                'symbols': symbols,
-                                'greeks': false
-                            },
-                            headers: {
-                                'Authorization': 'Bearer ' + api.getToken(),
-                                'Accept': 'application/json'
-                            }
-                        }).then(function (response) {
-                            //build return array
-                            var quote = response.data.quotes.quote; //array of jsons
-                            //options is our pulled array of jsons
-                            var retArr = [];
-                            var _loop_1 = function (i) {
-                                quote.forEach(function (quoteJSON) {
-                                    if (results[i]['option_symbol'] == quoteJSON['symbol']) {
-                                        retArr[i] = __assign(__assign({}, results[i]), quoteJSON);
-                                    }
-                                });
-                            };
+                        if (results.length != null && results.length != 0) {
+                            /**
+                                                    * The option symbols that we need the data for
+                                                    */
+                            var symbols = "";
                             for (var i = 0; i < results.length; i++) {
-                                _loop_1(i);
+                                symbols += results[i]['option_symbol'];
+                                i != results.length - 1 && (symbols += ",");
                             }
-                            resolve({ http_id: 200, message: "success", positions: retArr });
-                        }).catch(function (err) {
-                            reject({ http_id: 400, message: "Failed to option data" });
-                        });
+                            /**
+                             * Get the option details for the options the user owns
+                             */
+                            axios.get("https://sandbox.tradier.com/v1/markets/quotes", {
+                                params: {
+                                    'symbols': symbols,
+                                    'greeks': false
+                                },
+                                headers: {
+                                    'Authorization': 'Bearer ' + api.getToken(),
+                                    'Accept': 'application/json'
+                                }
+                            }).then(function (response) {
+                                //build return array
+                                var quote = response.data.quotes.quote; //array of jsons
+                                if (quote instanceof Array) {
+                                    //options is our pulled array of jsons
+                                    var retArr_1 = [];
+                                    var _loop_1 = function (i) {
+                                        quote.forEach(function (quoteJSON) {
+                                            if (results[i]['option_symbol'] == quoteJSON['symbol']) {
+                                                retArr_1[i] = __assign(__assign({}, results[i]), quoteJSON);
+                                            }
+                                        });
+                                    };
+                                    for (var i = 0; i < results.length; i++) {
+                                        _loop_1(i);
+                                    }
+                                    resolve({ http_id: 200, message: "success", positions: retArr_1 });
+                                }
+                                else {
+                                    //If only one option
+                                    resolve({ http_id: 200, message: "success", positions: [__assign(__assign({}, results[0]), quote)] });
+                                }
+                            }).catch(function (err) {
+                                reject({ http_id: 400, message: "Failed to get option data" });
+                            });
+                        }
+                        else {
+                            resolve({ http_id: 200, message: "success", positions: [] });
+                        }
                     }
                 });
             }
@@ -271,7 +324,8 @@ var getUserPositionsSpecificOption = function (userId, optionSymbol) {
 module.exports = {
     purchaseStock: purchaseStock,
     purchaseOption: purchaseOption,
-    getUserPositionsSpecificStock: getUserPositionsSpecificStock,
+    getUserPositionsSpecificStockOrAll: getUserPositionsSpecificStockOrAll,
     getUserPositionsSpecificOption: getUserPositionsSpecificOption,
-    sellStock: sellStock
+    sellStock: sellStock,
+    sellContract: sellContract
 };

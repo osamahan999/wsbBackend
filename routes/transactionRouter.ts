@@ -97,6 +97,44 @@ router.route('/sellStock').post(async (req: Request, res: Response) => {
 })
 
 
+
+
+/**
+ * Sell contracts
+ */
+router.route('/sellContract').post(async (req: Request, res: Response) => {
+    const cleanUserId: number = +xss(req.body.userId);
+    const cleanOptionPurchaseId: number = +xss(req.body.optionPurchaseId);
+    const cleanAmtToSell: number = +xss(req.body.amtToSell);
+    const cleanOptionSymbol: string = xss(req.body.optionSymbol);
+
+    //pull current cost of stock
+
+
+    const costOfContract: number = +(await (StockData.getQuoteBySymbol(cleanOptionSymbol))).quotes.ask;
+
+    if (isNaN(costOfContract)) res.status(400).json("Expired");
+    else {
+        /**
+           * Make sure input is not null or empty
+           */
+        if (
+            cleanUserId >= 0 &&
+            (cleanOptionSymbol != undefined && cleanOptionSymbol.length != 0)
+            && cleanAmtToSell != 0 && cleanOptionPurchaseId >= 0 &&
+            (costOfContract != undefined && costOfContract >= 0)
+        ) {
+            const response = await Transactions.sellContract(cleanUserId, cleanOptionPurchaseId, cleanAmtToSell, costOfContract);
+            res.status(response.http_id).json(response.message);
+
+        } else {
+            res.status(400).json("Bad input");
+
+        }
+    }
+})
+
+
 /**
  * User calls this with their login token to make a purchase of an option.
  * 
@@ -169,10 +207,13 @@ router.route('/purchaseOption').post((req: Request, res: Response) => {
  */
 router.route('/getSpecificPosition').get(async (req: Request, res: Response) => {
     const cleanUserId = +xss(req.query.userId);
-    const cleanStockSymbol = xss(req.query.stockSymbol);
+    let cleanStockSymbol: string | null;
+    //if it is not null, clean it, else set the input var as null
+    req.query.stockSymbol != null ? cleanStockSymbol = xss(req.query.stockSymbol) : cleanStockSymbol = null;
 
-    if (cleanUserId != 0 && cleanUserId != null && cleanStockSymbol.length > 0) {
-        let response = await Transactions.getUserPositionsSpecificStock(cleanUserId, cleanStockSymbol);
+
+    if (cleanUserId != 0 && cleanUserId != null) {
+        let response = await Transactions.getUserPositionsSpecificStockOrAll(cleanUserId, cleanStockSymbol);
 
         if (response.http_id == 400 || response.http_id == 999)
             res.status(response.http_id).json(response.message);
