@@ -124,6 +124,8 @@ const sellStock = (userId: number, purchaseId: number,
                         }
                     })
             }
+            connection.release();
+
         })
     }).catch(err => {
         return err
@@ -161,6 +163,9 @@ const sellContract = (userId: number, optionPurchaseId: number,
                         }
                     })
             }
+
+            connection.release();
+
         })
     }).catch(err => {
         return err
@@ -274,10 +279,10 @@ const getUserPositionsSpecificStockOrAll = (userId: number, stockSymbol: string 
 
 
     if (stockSymbol == null) {
-        query = "SELECT * FROM purchase NATURAL JOIN stock WHERE (user_id = ?) AND (amt_of_purchase != amt_sold)"; //all stock positions not sold
+        query = "SELECT * FROM purchase NATURAL JOIN stock WHERE (user_id = ?) AND (amt_of_purchase != amt_sold) ORDER BY date_purchased DESC"; //all stock positions not sold
         input = [userId];
     } else {
-        query = "SELECT * FROM purchase NATURAL JOIN stock WHERE (user_id = ?) AND (stock_symbol = ?) AND (amt_of_purchase != amt_sold)";
+        query = "SELECT * FROM purchase NATURAL JOIN stock WHERE (user_id = ?) AND (stock_symbol = ?) AND (amt_of_purchase != amt_sold) ORDER BY date_purchased DESC";
         input = [userId, stockSymbol];
     }
 
@@ -317,11 +322,11 @@ const getUserPositionsSpecificOptionOrAll = (userId: number, optionSymbol: strin
     let input: Array<any>;
 
     if (optionSymbol == null) {
-        query = "SELECT * FROM option_purchase NATURAL JOIN contract_option WHERE (amt_of_contracts != amt_sold) AND user_id = ?";
+        query = "SELECT * FROM option_purchase NATURAL JOIN contract_option WHERE (amt_of_contracts != amt_sold) AND user_id = ? ORDER BY date_purchased DESC";
         input = [userId];
     } else {
         query = "SELECT * FROM option_purchase NATURAL JOIN contract_option WHERE" +
-            " (amt_of_contracts != amt_sold) AND (user_id = ?) AND (option_symbol LIKE concat(?, '%'))";
+            " (amt_of_contracts != amt_sold) AND (user_id = ?) AND (option_symbol LIKE concat(?, '%')) ORDER BY date_purchased DESC";
         input = [userId, optionSymbol]
 
     }
@@ -409,8 +414,80 @@ const getUserPositionsSpecificOptionOrAll = (userId: number, optionSymbol: strin
     }).catch((err) => {
         return err;
     })
+}
 
 
+/**
+ * 
+ * @param userId User ID to
+ * 
+ * @returns {JSON} {http_id: 999|400|200, 
+ *                  message: "Failed to get connection from pool"|"Error getting user stock transactions"| "Success", 
+ *                  positions<Array<JSON>> : ({})}
+ */
+const getAllUserStockTransactions = (userId: number) => {
+    let query: string;
+    let input: Array<any>;
+
+    //Gets all the user stock transactions with all stock data available
+    //TODO: Implement a date input, so that user can filter by date 
+    //TODO: Implement a symbol input, so that user can filter by symbol
+
+    query = "SELECT * FROM purchase NATURAL JOIN stock WHERE user_id = ? ORDER BY date_purchased DESC";
+    input = [userId];
+    return new Promise((resolve, reject) => {
+        pool.getConnection((error: MysqlError, connection: PoolConnection) => {
+            if (error) reject({ http_id: 999, message: "Failed to get connection from pool" });
+            else {
+                connection.query(query, input, (err, results, fields) => {
+                    if (err) reject({ http_id: 400, message: "Error getting user stock transactions" })
+                    else {
+                        resolve({ http_id: 200, message: "Success", positions: results })
+                    }
+                })
+            }
+
+            connection.release();
+        })
+    }).then((json) => { return json })
+        .catch((err) => { return err });
+}
+
+/**
+ * 
+ * @param userId 
+ * 
+ * @returns {JSON} {http_id:999, 400, 200, 
+ *                  message: "Failed to get connection from pool"| "Error getting user contract transactions"| "Success", 
+ *                  positions<Array<JSON>> : [{}]
+ *                  }
+ */
+const getAllUserContractTransactions = (userId: number) => {
+    let query: string;
+    let input: Array<any>;
+
+    //Gets all the user contract transactions with all contract data available
+    //TODO: Implement a date input, so that user can filter by date 
+    //TODO: Implement a symbol input, so that user can filter by symbol
+
+    query = "SELECT * FROM option_purchase NATURAL JOIN contract_option WHERE user_id = ? ORDER BY date_purchased DESC";
+    input = [userId];
+    return new Promise((resolve, reject) => {
+        pool.getConnection((error: MysqlError, connection: PoolConnection) => {
+            if (error) reject({ http_id: 999, message: "Failed to get connection from pool" });
+            else {
+                connection.query(query, input, (err, results, fields) => {
+                    if (err) reject({ http_id: 400, message: "Error getting user contract transactions" })
+                    else {
+                        resolve({ http_id: 200, message: "Success", positions: results })
+                    }
+                })
+            }
+
+            connection.release();
+        })
+    }).then((json) => { return json })
+        .catch((err) => { return err });
 }
 
 
@@ -420,5 +497,7 @@ module.exports = {
     getUserPositionsSpecificStockOrAll,
     getUserPositionsSpecificOptionOrAll,
     sellStock,
-    sellContract
+    sellContract,
+    getAllUserStockTransactions,
+    getAllUserContractTransactions
 }

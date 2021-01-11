@@ -1,6 +1,6 @@
 
 import axios, { AxiosError, AxiosResponse } from "axios";
-import { Request, Response } from "express";
+import { Request, response, Response } from "express";
 
 const router = require('express').Router();
 const xss = require('xss'); //used for cleaning user input
@@ -250,6 +250,40 @@ router.route('/getSpecificOptionPosition').get(async (req: Request, res: Respons
     } else {
 
         res.status(400).json("Inputs are invalid");
+    }
+})
+
+router.route('/getUserStockHistory').get(async (req: Request, res: Response) => {
+    const cleanUserId: number = (req.query.userId != undefined ? +req.query.userId : -1);
+
+    if (cleanUserId > 0 && cleanUserId != null) {
+        let response = await Transactions.getAllUserStockTransactions(cleanUserId);
+
+        if (response.http_id == 400 || response.http_id == 999) {
+            res.status(response.http_id).json(response.message);
+        } else {
+            res.status(response.http_id).json(response.positions);
+        }
+
+    } else {
+        res.status(400).json("Bad user input");
+    }
+})
+
+router.route('/getUserContractHistory').get(async (req: Request, res: Response) => {
+    const cleanUserId: number = (req.query.userId != undefined ? +req.query.userId : -1);
+
+    if (cleanUserId > 0 && cleanUserId != null) {
+        let response = await Transactions.getAllUserContractTransactions(cleanUserId);
+
+        if (response.http_id == 400 || response.http_id == 999) {
+            res.status(response.http_id).json(response.message);
+        } else {
+            res.status(response.http_id).json(response.positions);
+        }
+
+    } else {
+        res.status(400).json("Bad user input");
     }
 })
 

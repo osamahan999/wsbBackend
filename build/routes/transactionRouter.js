@@ -53,7 +53,7 @@ var api = require('../../config/apiTokens');
  * TODO: get cost of stock from API to make sure they paying right amt. Can do this, but this doubles my api calls so not doing it
  */
 router.route('/purchaseStock').post(function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
-    var cleanToken, cleanPassword, cleanStockSymbol, cleanStockName, cleanAmtOfStocks, cleanExchange, costOfStock, response;
+    var cleanToken, cleanPassword, cleanStockSymbol, cleanStockName, cleanAmtOfStocks, cleanExchange, costOfStock, response_1;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -72,11 +72,11 @@ router.route('/purchaseStock').post(function (req, res) { return __awaiter(void 
                     && cleanAmtOfStocks > 0)) return [3 /*break*/, 3];
                 return [4 /*yield*/, Transactions.purchaseStock(cleanToken, cleanPassword, cleanStockSymbol, cleanStockName, costOfStock, cleanAmtOfStocks, cleanExchange)];
             case 2:
-                response = _a.sent();
-                if (response.http_id == 400 || response.http_id == 999)
-                    res.status(response.http_id).json(response.message);
+                response_1 = _a.sent();
+                if (response_1.http_id == 400 || response_1.http_id == 999)
+                    res.status(response_1.http_id).json(response_1.message);
                 else {
-                    res.json(response.message);
+                    res.json(response_1.message);
                 }
                 return [3 /*break*/, 4];
             case 3:
@@ -90,7 +90,7 @@ router.route('/purchaseStock').post(function (req, res) { return __awaiter(void 
  * Sell a stock
  */
 router.route('/sellStock').post(function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
-    var cleanUserId, cleanPurchaseId, cleanAmtToSell, cleanStockSymbol, costOfStock, response;
+    var cleanUserId, cleanPurchaseId, cleanAmtToSell, cleanStockSymbol, costOfStock, response_2;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -107,8 +107,8 @@ router.route('/sellStock').post(function (req, res) { return __awaiter(void 0, v
                     (costOfStock != undefined && costOfStock >= 0))) return [3 /*break*/, 3];
                 return [4 /*yield*/, Transactions.sellStock(cleanUserId, cleanPurchaseId, cleanAmtToSell, costOfStock)];
             case 2:
-                response = _a.sent();
-                res.status(response.http_id).json(response.message);
+                response_2 = _a.sent();
+                res.status(response_2.http_id).json(response_2.message);
                 return [3 /*break*/, 4];
             case 3:
                 res.status(400).json("Bad input");
@@ -121,7 +121,7 @@ router.route('/sellStock').post(function (req, res) { return __awaiter(void 0, v
  * Sell contracts
  */
 router.route('/sellContract').post(function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
-    var cleanUserId, cleanOptionPurchaseId, cleanAmtToSell, cleanOptionSymbol, costOfContract, response;
+    var cleanUserId, cleanOptionPurchaseId, cleanAmtToSell, cleanOptionSymbol, costOfContract, response_3;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -142,8 +142,8 @@ router.route('/sellContract').post(function (req, res) { return __awaiter(void 0
                     (costOfContract != undefined && costOfContract >= 0))) return [3 /*break*/, 4];
                 return [4 /*yield*/, Transactions.sellContract(cleanUserId, cleanOptionPurchaseId, cleanAmtToSell, costOfContract)];
             case 3:
-                response = _a.sent();
-                res.status(response.http_id).json(response.message);
+                response_3 = _a.sent();
+                res.status(response_3.http_id).json(response_3.message);
                 return [3 /*break*/, 5];
             case 4:
                 res.status(400).json("Bad input");
@@ -210,7 +210,7 @@ router.route('/purchaseOption').post(function (req, res) {
  * TODO: refactor to getAllPositionsOrOne
  */
 router.route('/getSpecificPosition').get(function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
-    var cleanUserId, cleanStockSymbol, response;
+    var cleanUserId, cleanStockSymbol, response_4;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -220,11 +220,11 @@ router.route('/getSpecificPosition').get(function (req, res) { return __awaiter(
                 if (!(cleanUserId != 0 && cleanUserId != null)) return [3 /*break*/, 2];
                 return [4 /*yield*/, Transactions.getUserPositionsSpecificStockOrAll(cleanUserId, cleanStockSymbol)];
             case 1:
-                response = _a.sent();
-                if (response.http_id == 400 || response.http_id == 999)
-                    res.status(response.http_id).json(response.message);
+                response_4 = _a.sent();
+                if (response_4.http_id == 400 || response_4.http_id == 999)
+                    res.status(response_4.http_id).json(response_4.message);
                 else {
-                    res.json(response);
+                    res.json(response_4);
                 }
                 return [3 /*break*/, 3];
             case 2:
@@ -240,7 +240,7 @@ router.route('/getSpecificPosition').get(function (req, res) { return __awaiter(
 
  */
 router.route('/getSpecificOptionPosition').get(function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
-    var cleanUserId, cleanStockSymbol, response;
+    var cleanUserId, cleanStockSymbol, response_5;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -249,15 +249,63 @@ router.route('/getSpecificOptionPosition').get(function (req, res) { return __aw
                 if (!(cleanUserId != 0 && cleanUserId != null)) return [3 /*break*/, 2];
                 return [4 /*yield*/, Transactions.getUserPositionsSpecificOptionOrAll(cleanUserId, cleanStockSymbol)];
             case 1:
-                response = _a.sent();
-                if (response.http_id == 400 || response.http_id == 999)
-                    res.status(response.http_id).json(response.message);
+                response_5 = _a.sent();
+                if (response_5.http_id == 400 || response_5.http_id == 999)
+                    res.status(response_5.http_id).json(response_5.message);
                 else {
-                    res.json(response);
+                    res.json(response_5);
                 }
                 return [3 /*break*/, 3];
             case 2:
                 res.status(400).json("Inputs are invalid");
+                _a.label = 3;
+            case 3: return [2 /*return*/];
+        }
+    });
+}); });
+router.route('/getUserStockHistory').get(function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
+    var cleanUserId, response_6;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                cleanUserId = (req.query.userId != undefined ? +req.query.userId : -1);
+                if (!(cleanUserId > 0 && cleanUserId != null)) return [3 /*break*/, 2];
+                return [4 /*yield*/, Transactions.getAllUserStockTransactions(cleanUserId)];
+            case 1:
+                response_6 = _a.sent();
+                if (response_6.http_id == 400 || response_6.http_id == 999) {
+                    res.status(response_6.http_id).json(response_6.message);
+                }
+                else {
+                    res.status(response_6.http_id).json(response_6.positions);
+                }
+                return [3 /*break*/, 3];
+            case 2:
+                res.status(400).json("Bad user input");
+                _a.label = 3;
+            case 3: return [2 /*return*/];
+        }
+    });
+}); });
+router.route('/getUserContractHistory').get(function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
+    var cleanUserId, response_7;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                cleanUserId = (req.query.userId != undefined ? +req.query.userId : -1);
+                if (!(cleanUserId > 0 && cleanUserId != null)) return [3 /*break*/, 2];
+                return [4 /*yield*/, Transactions.getAllUserContractTransactions(cleanUserId)];
+            case 1:
+                response_7 = _a.sent();
+                if (response_7.http_id == 400 || response_7.http_id == 999) {
+                    res.status(response_7.http_id).json(response_7.message);
+                }
+                else {
+                    res.status(response_7.http_id).json(response_7.positions);
+                }
+                return [3 /*break*/, 3];
+            case 2:
+                res.status(400).json("Bad user input");
                 _a.label = 3;
             case 3: return [2 /*return*/];
         }
