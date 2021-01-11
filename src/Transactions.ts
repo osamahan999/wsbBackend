@@ -425,16 +425,32 @@ const getUserPositionsSpecificOptionOrAll = (userId: number, optionSymbol: strin
  *                  message: "Failed to get connection from pool"|"Error getting user stock transactions"| "Success", 
  *                  positions<Array<JSON>> : ({})}
  */
-const getAllUserStockTransactions = (userId: number) => {
+const getAllUserStockTransactions = (userId: number, cleanSalesOrPurchases: string, cleanFilterSymbol: string | null) => {
     let query: string;
     let input: Array<any>;
 
-    //Gets all the user stock transactions with all stock data available
-    //TODO: Implement a date input, so that user can filter by date 
-    //TODO: Implement a symbol input, so that user can filter by symbol
+    ///If sales, we pull all the sales; if purchases, we pull purchases
+    //for each sale, there is a purchase. This is how we get the net $ they made or lost
+    cleanSalesOrPurchases == "sales" ?
+        query = "SELECT * FROM stock_sell NATURAL JOIN stock INNER JOIN purchase "
+        + " ON purchase.purchase_id = stock_sell.purchase_id WHERE stock_sell.amt_sold != 0 AND stock_sell.user_id = ? "
+        :
+        query = "SELECT * FROM purchase NATURAL JOIN stock WHERE purchase.user_id = ? ";
 
-    query = "SELECT * FROM purchase NATURAL JOIN stock WHERE user_id = ? ORDER BY date_purchased DESC";
-    input = [userId];
+    //There is a filter symbol, so we add the wildcard search
+
+    if (cleanFilterSymbol != null) {
+        query += "  AND stock_symbol LIKE CONCAT(?, '%') "
+        input = [userId, cleanFilterSymbol];
+
+    } else {
+        input = [userId]
+    }
+
+    //Order by the correct value per sales or purchases
+    cleanSalesOrPurchases == "sales" ? query += " ORDER BY date_sold DESC" : query += " ORDER BY date_purchased DESC";
+
+
     return new Promise((resolve, reject) => {
         pool.getConnection((error: MysqlError, connection: PoolConnection) => {
             if (error) reject({ http_id: 999, message: "Failed to get connection from pool" });
@@ -462,16 +478,30 @@ const getAllUserStockTransactions = (userId: number) => {
  *                  positions<Array<JSON>> : [{}]
  *                  }
  */
-const getAllUserContractTransactions = (userId: number) => {
+const getAllUserContractTransactions = (userId: number, cleanSalesOrPurchases: string, cleanFilterSymbol: string | null) => {
     let query: string;
     let input: Array<any>;
 
-    //Gets all the user contract transactions with all contract data available
-    //TODO: Implement a date input, so that user can filter by date 
-    //TODO: Implement a symbol input, so that user can filter by symbol
+    //To get sales or purchases
+    cleanSalesOrPurchases == "sales" ? query = "SELECT * FROM sell_option NATURAL JOIN contract_option "
+        + " INNER JOIN option_purchase ON sell_option.option_purchase_id = option_purchase.option_purchase_id "
+        + " WHERE sell_option.amt_sold != 0 AND sell_option.user_id = ?  "
 
-    query = "SELECT * FROM option_purchase NATURAL JOIN contract_option WHERE user_id = ? ORDER BY date_purchased DESC";
-    input = [userId];
+        :
+        query = "SELECT * FROM option_purchase NATURAL JOIN contract_option WHERE user_id = ? "
+        ;
+
+    //Whether to filter or not
+    if (cleanFilterSymbol != null) {
+        query += " AND contract_option.option_symbol LIKE CONCAT(?, '%') ";
+        input = [userId, cleanFilterSymbol];
+    } else {
+        input = [userId];
+    }
+    //Order by the correct value per sales or purchases
+
+    cleanSalesOrPurchases == "sales" ? query += " ORDER BY sell_option.date_sold DESC" : query += " ORDER BY option_purchase.date_purchased DESC";
+
     return new Promise((resolve, reject) => {
         pool.getConnection((error: MysqlError, connection: PoolConnection) => {
             if (error) reject({ http_id: 999, message: "Failed to get connection from pool" });

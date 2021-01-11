@@ -66,6 +66,7 @@ var getQuoteBySymbol = function (symbol) {
             var quote = response.data.quotes.quote;
             resolve({ http_id: 200, message: "Success", quotes: quote });
         }).catch(function (err) {
+            console.log(err);
             reject({ http_id: 400, message: "Failed", quotes: [] });
         });
     }).catch(function (err) {

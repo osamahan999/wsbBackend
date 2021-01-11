@@ -67,7 +67,6 @@ const findBySymbol = (input: string) => {
  * @return {JSON} {http_id: 200|400, message: 'Success'|'Failed', quotes<Array<JSON>> : [{}]}
  */
 const getQuoteBySymbol = (symbol: string) => {
-
     return new Promise((resolve, reject) => {
         axios.get("https://sandbox.tradier.com/v1/markets/quotes", {
             params: {
@@ -80,11 +79,10 @@ const getQuoteBySymbol = (symbol: string) => {
             }
         }).then((response: AxiosResponse) => {
             let quote: JSON = response.data.quotes.quote;
-
             resolve({ http_id: 200, message: "Success", quotes: quote });
 
         }).catch((err: AxiosError) => {
-
+            console.log(err);
             reject({ http_id: 400, message: "Failed", quotes: [] });
 
         })

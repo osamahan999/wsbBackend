@@ -264,13 +264,17 @@ router.route('/getSpecificOptionPosition').get(function (req, res) { return __aw
     });
 }); });
 router.route('/getUserStockHistory').get(function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
-    var cleanUserId, response_6;
+    var cleanUserId, cleanSalesOrPurchases, cleanFilterSymbol, response_6;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 cleanUserId = (req.query.userId != undefined ? +req.query.userId : -1);
-                if (!(cleanUserId > 0 && cleanUserId != null)) return [3 /*break*/, 2];
-                return [4 /*yield*/, Transactions.getAllUserStockTransactions(cleanUserId)];
+                cleanSalesOrPurchases = xss(req.query.salesOrPurchases);
+                //If filter is sent in, set it to the cleaned version, else null
+                (req.query.filter != null && req.query.filter != undefined && req.query.filter.length != 0)
+                    ? cleanFilterSymbol = xss(req.query.filter) : cleanFilterSymbol = null;
+                if (!(cleanUserId > 0 && cleanUserId != null && (cleanSalesOrPurchases == "sales" || cleanSalesOrPurchases == "purchases"))) return [3 /*break*/, 2];
+                return [4 /*yield*/, Transactions.getAllUserStockTransactions(cleanUserId, cleanSalesOrPurchases, cleanFilterSymbol)];
             case 1:
                 response_6 = _a.sent();
                 if (response_6.http_id == 400 || response_6.http_id == 999) {
@@ -288,13 +292,17 @@ router.route('/getUserStockHistory').get(function (req, res) { return __awaiter(
     });
 }); });
 router.route('/getUserContractHistory').get(function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
-    var cleanUserId, response_7;
+    var cleanUserId, cleanSalesOrPurchases, cleanFilterSymbol, response_7;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 cleanUserId = (req.query.userId != undefined ? +req.query.userId : -1);
-                if (!(cleanUserId > 0 && cleanUserId != null)) return [3 /*break*/, 2];
-                return [4 /*yield*/, Transactions.getAllUserContractTransactions(cleanUserId)];
+                cleanSalesOrPurchases = xss(req.query.salesOrPurchases);
+                //If filter is sent in, set it to the cleaned version, else null
+                (req.query.filter != null && req.query.filter != undefined && req.query.filter.length != 0)
+                    ? cleanFilterSymbol = xss(req.query.filter) : cleanFilterSymbol = null;
+                if (!(cleanUserId > 0 && cleanUserId != null && (cleanSalesOrPurchases == "sales" || cleanSalesOrPurchases == "purchases"))) return [3 /*break*/, 2];
+                return [4 /*yield*/, Transactions.getAllUserContractTransactions(cleanUserId, cleanSalesOrPurchases, cleanFilterSymbol)];
             case 1:
                 response_7 = _a.sent();
                 if (response_7.http_id == 400 || response_7.http_id == 999) {

@@ -110,7 +110,6 @@ router.route('/sellContract').post(async (req: Request, res: Response) => {
 
     //pull current cost of stock
 
-
     const costOfContract: number = +(await (StockData.getQuoteBySymbol(cleanOptionSymbol))).quotes.ask;
 
     if (isNaN(costOfContract)) res.status(400).json("Expired");
@@ -255,9 +254,18 @@ router.route('/getSpecificOptionPosition').get(async (req: Request, res: Respons
 
 router.route('/getUserStockHistory').get(async (req: Request, res: Response) => {
     const cleanUserId: number = (req.query.userId != undefined ? +req.query.userId : -1);
+    const cleanSalesOrPurchases: string = xss(req.query.salesOrPurchases);
 
-    if (cleanUserId > 0 && cleanUserId != null) {
-        let response = await Transactions.getAllUserStockTransactions(cleanUserId);
+    //String if sent in, null if not sent in,
+    let cleanFilterSymbol: string | null;
+
+    //If filter is sent in, set it to the cleaned version, else null
+    (req.query.filter != null && req.query.filter != undefined && req.query.filter.length != 0)
+        ? cleanFilterSymbol = xss(req.query.filter) : cleanFilterSymbol = null;
+
+
+    if (cleanUserId > 0 && cleanUserId != null && (cleanSalesOrPurchases == "sales" || cleanSalesOrPurchases == "purchases")) {
+        let response = await Transactions.getAllUserStockTransactions(cleanUserId, cleanSalesOrPurchases, cleanFilterSymbol);
 
         if (response.http_id == 400 || response.http_id == 999) {
             res.status(response.http_id).json(response.message);
@@ -272,9 +280,18 @@ router.route('/getUserStockHistory').get(async (req: Request, res: Response) => 
 
 router.route('/getUserContractHistory').get(async (req: Request, res: Response) => {
     const cleanUserId: number = (req.query.userId != undefined ? +req.query.userId : -1);
+    const cleanSalesOrPurchases: string = xss(req.query.salesOrPurchases);
 
-    if (cleanUserId > 0 && cleanUserId != null) {
-        let response = await Transactions.getAllUserContractTransactions(cleanUserId);
+    //String if sent in, null if not sent in,
+    let cleanFilterSymbol: string | null;
+
+    //If filter is sent in, set it to the cleaned version, else null
+    (req.query.filter != null && req.query.filter != undefined && req.query.filter.length != 0)
+        ? cleanFilterSymbol = xss(req.query.filter) : cleanFilterSymbol = null;
+
+
+    if (cleanUserId > 0 && cleanUserId != null && (cleanSalesOrPurchases == "sales" || cleanSalesOrPurchases == "purchases")) {
+        let response = await Transactions.getAllUserContractTransactions(cleanUserId, cleanSalesOrPurchases, cleanFilterSymbol);
 
         if (response.http_id == 400 || response.http_id == 999) {
             res.status(response.http_id).json(response.message);
