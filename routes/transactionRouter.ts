@@ -311,9 +311,11 @@ router.route('/getUserContractHistory').get(async (req: Request, res: Response) 
 router.route("/setOptionToExpired").post(async (req: Request, res: Response) => {
     const cleanUserId: number = +(xss(req.body.userId));
     const cleanOptionSymbol: string = xss(req.body.optionSymbol);
+    const cleanOptionPurchaseId: number = +xss(req.body.optionPurchaseId);
+
 
     if (cleanOptionSymbol != null && cleanUserId != 0 && cleanUserId != null && cleanOptionSymbol.length != 0) {
-        let response = await Transactions.setOptionToExpired(cleanUserId, cleanOptionSymbol);
+        let response = await Transactions.setOptionToExpired(cleanUserId, cleanOptionSymbol, cleanOptionPurchaseId);
 
         res.status(response.http_id).json(response.message);
     } else res.status(400).json("Bad input");

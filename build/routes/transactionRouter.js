@@ -323,14 +323,15 @@ router.route('/getUserContractHistory').get(function (req, res) { return __await
  * Sets a specific option to be expired
  */
 router.route("/setOptionToExpired").post(function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
-    var cleanUserId, cleanOptionSymbol, response_8;
+    var cleanUserId, cleanOptionSymbol, cleanOptionPurchaseId, response_8;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 cleanUserId = +(xss(req.body.userId));
                 cleanOptionSymbol = xss(req.body.optionSymbol);
+                cleanOptionPurchaseId = +xss(req.body.optionPurchaseId);
                 if (!(cleanOptionSymbol != null && cleanUserId != 0 && cleanUserId != null && cleanOptionSymbol.length != 0)) return [3 /*break*/, 2];
-                return [4 /*yield*/, Transactions.setOptionToExpired(cleanUserId, cleanOptionSymbol)];
+                return [4 /*yield*/, Transactions.setOptionToExpired(cleanUserId, cleanOptionSymbol, cleanOptionPurchaseId)];
             case 1:
                 response_8 = _a.sent();
                 res.status(response_8.http_id).json(response_8.message);

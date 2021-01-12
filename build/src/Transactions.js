@@ -445,10 +445,9 @@ var getAllUserContractTransactions = function (userId, cleanSalesOrPurchases, cl
  * @return {JSON} {http_id: 999|400|200,
  *                  message: 'Failed to get connection from pool'|'Error setting option as expired', 'Success'}
  */
-var setOptionToExpired = function (userId, optionSymbol) {
-    var query = "UPDATE option_purchase SET amt_sold = amt_of_contracts WHERE user_id = ? "
-        + " AND option_id = (SELECT option_id FROM contract_option WHERE option_symbol = ?)";
-    var input = [userId, optionSymbol];
+var setOptionToExpired = function (userId, optionSymbol, optionPurchaseId) {
+    var query = "CALL set_option_expired(?, ?, ?)";
+    var input = [userId, optionSymbol, optionPurchaseId];
     return new Promise(function (resolve, reject) {
         pool.getConnection(function (error, connection) {
             if (error)

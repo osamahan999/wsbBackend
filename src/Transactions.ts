@@ -541,10 +541,9 @@ const getAllUserContractTransactions = (userId: number, cleanSalesOrPurchases: s
  * @return {JSON} {http_id: 999|400|200, 
  *                  message: 'Failed to get connection from pool'|'Error setting option as expired', 'Success'}
  */
-const setOptionToExpired = (userId: number, optionSymbol: string) => {
-    const query: string = "UPDATE option_purchase SET amt_sold = amt_of_contracts WHERE user_id = ? "
-        + " AND option_id = (SELECT option_id FROM contract_option WHERE option_symbol = ?)";
-    const input: Array<number | string> = [userId, optionSymbol];
+const setOptionToExpired = (userId: number, optionSymbol: string, optionPurchaseId: number) => {
+    const query: string = "CALL set_option_expired(?, ?, ?)";
+    const input: Array<number | string> = [userId, optionSymbol, optionPurchaseId];
 
     return new Promise((resolve, reject) => {
         pool.getConnection((error: MysqlError, connection: PoolConnection) => {
