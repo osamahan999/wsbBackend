@@ -379,16 +379,29 @@ const getUserPositionsSpecificOptionOrAll = (userId: number, optionSymbol: strin
 
 
                                         quote.forEach((quoteJSON: JSON | any) => {
-                                            if (results[i]['option_symbol'] == quoteJSON['symbol']) {
+                                            if ((results[i]['option_symbol'] == quoteJSON['symbol'])) {
                                                 retArr[i] = { ...results[i], ...quoteJSON };
                                             }
                                         })
                                     }
 
                                     resolve({ http_id: 200, message: "success", positions: retArr })
+                                } else if (quote == undefined) {
+                                    let retArr: Array<JSON> = [];
+
+                                    for (let i = 0; i < results.length; i++) {
+                                        retArr[i] = {
+                                            ...results[i],
+                                            ...{ description: "expired", underlying: results[i].option_symbol, ask: 0 }
+                                        }
+                                    }
+
+                                    resolve({ http_id: 200, message: "success", positions: retArr })
                                 } else {
                                     //If only one option
+
                                     resolve({ http_id: 200, message: "success", positions: [{ ...results[0], ...quote }] })
+
                                 }
 
 
@@ -520,6 +533,37 @@ const getAllUserContractTransactions = (userId: number, cleanSalesOrPurchases: s
         .catch((err) => { return err });
 }
 
+/**
+ * 
+ * @param userId 
+ * @param optionSymbol Option you want to set as expired 
+ * 
+ * @return {JSON} {http_id: 999|400|200, 
+ *                  message: 'Failed to get connection from pool'|'Error setting option as expired', 'Success'}
+ */
+const setOptionToExpired = (userId: number, optionSymbol: string) => {
+    const query: string = "UPDATE option_purchase SET amt_sold = amt_of_contracts WHERE user_id = ? "
+        + " AND option_id = (SELECT option_id FROM contract_option WHERE option_symbol = ?)";
+    const input: Array<number | string> = [userId, optionSymbol];
+
+    return new Promise((resolve, reject) => {
+        pool.getConnection((error: MysqlError, connection: PoolConnection) => {
+            if (error) reject({ http_id: 999, message: "Failed to get connection from pool" });
+            else {
+                connection.query(query, input, (err, results, fields) => {
+                    if (err) reject({ http_id: 400, message: "Error setting option as expired" })
+                    else {
+                        resolve({ http_id: 200, message: "Success" })
+                    }
+                })
+            }
+
+            connection.release();
+        })
+    }).then((json) => { return json })
+        .catch((err) => { return err });
+
+}
 
 module.exports = {
     purchaseStock,
@@ -529,5 +573,6 @@ module.exports = {
     sellStock,
     sellContract,
     getAllUserStockTransactions,
-    getAllUserContractTransactions
+    getAllUserContractTransactions,
+    setOptionToExpired
 }

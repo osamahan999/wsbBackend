@@ -306,7 +306,7 @@ var getUserPositionsSpecificOptionOrAll = function (userId, optionSymbol) {
                                     var retArr_1 = [];
                                     var _loop_1 = function (i) {
                                         quote.forEach(function (quoteJSON) {
-                                            if (results[i]['option_symbol'] == quoteJSON['symbol']) {
+                                            if ((results[i]['option_symbol'] == quoteJSON['symbol'])) {
                                                 retArr_1[i] = __assign(__assign({}, results[i]), quoteJSON);
                                             }
                                         });
@@ -315,6 +315,13 @@ var getUserPositionsSpecificOptionOrAll = function (userId, optionSymbol) {
                                         _loop_1(i);
                                     }
                                     resolve({ http_id: 200, message: "success", positions: retArr_1 });
+                                }
+                                else if (quote == undefined) {
+                                    var retArr = [];
+                                    for (var i = 0; i < results.length; i++) {
+                                        retArr[i] = __assign(__assign({}, results[i]), { description: "expired", underlying: results[i].option_symbol, ask: 0 });
+                                    }
+                                    resolve({ http_id: 200, message: "success", positions: retArr });
                                 }
                                 else {
                                     //If only one option
@@ -430,6 +437,36 @@ var getAllUserContractTransactions = function (userId, cleanSalesOrPurchases, cl
     }).then(function (json) { return json; })
         .catch(function (err) { return err; });
 };
+/**
+ *
+ * @param userId
+ * @param optionSymbol Option you want to set as expired
+ *
+ * @return {JSON} {http_id: 999|400|200,
+ *                  message: 'Failed to get connection from pool'|'Error setting option as expired', 'Success'}
+ */
+var setOptionToExpired = function (userId, optionSymbol) {
+    var query = "UPDATE option_purchase SET amt_sold = amt_of_contracts WHERE user_id = ? "
+        + " AND option_id = (SELECT option_id FROM contract_option WHERE option_symbol = ?)";
+    var input = [userId, optionSymbol];
+    return new Promise(function (resolve, reject) {
+        pool.getConnection(function (error, connection) {
+            if (error)
+                reject({ http_id: 999, message: "Failed to get connection from pool" });
+            else {
+                connection.query(query, input, function (err, results, fields) {
+                    if (err)
+                        reject({ http_id: 400, message: "Error setting option as expired" });
+                    else {
+                        resolve({ http_id: 200, message: "Success" });
+                    }
+                });
+            }
+            connection.release();
+        });
+    }).then(function (json) { return json; })
+        .catch(function (err) { return err; });
+};
 module.exports = {
     purchaseStock: purchaseStock,
     purchaseOption: purchaseOption,
@@ -438,5 +475,6 @@ module.exports = {
     sellStock: sellStock,
     sellContract: sellContract,
     getAllUserStockTransactions: getAllUserStockTransactions,
-    getAllUserContractTransactions: getAllUserContractTransactions
+    getAllUserContractTransactions: getAllUserContractTransactions,
+    setOptionToExpired: setOptionToExpired
 };

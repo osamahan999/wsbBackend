@@ -304,4 +304,18 @@ router.route('/getUserContractHistory').get(async (req: Request, res: Response) 
     }
 })
 
+
+/**
+ * Sets a specific option to be expired
+ */
+router.route("/setOptionToExpired").post(async (req: Request, res: Response) => {
+    const cleanUserId: number = +(xss(req.body.userId));
+    const cleanOptionSymbol: string = xss(req.body.optionSymbol);
+
+    if (cleanOptionSymbol != null && cleanUserId != 0 && cleanUserId != null && cleanOptionSymbol.length != 0) {
+        let response = await Transactions.setOptionToExpired(cleanUserId, cleanOptionSymbol);
+
+        res.status(response.http_id).json(response.message);
+    } else res.status(400).json("Bad input");
+})
 module.exports = router
