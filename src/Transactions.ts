@@ -86,8 +86,10 @@ const purchaseStock = (
                         }
                     }
                 })
+
+                connection.release();
+
             }
-            connection.release();
         })
     }).then((json) => {
         return json;
@@ -123,8 +125,10 @@ const sellStock = (userId: number, purchaseId: number,
                             resolve({ http_id: 200, message: "Sold successful" });
                         }
                     })
+
+                connection.release();
+
             }
-            connection.release();
 
         })
     }).catch(err => {
@@ -162,9 +166,11 @@ const sellContract = (userId: number, optionPurchaseId: number,
                             resolve({ http_id: 200, message: "Sold successful" });
                         }
                     })
+
+                connection.release();
+
             }
 
-            connection.release();
 
         })
     }).catch(err => {
@@ -253,8 +259,10 @@ const purchaseOption = (
                         }
                     }
                 })
+
+                connection.release();
+
             }
-            connection.release();
         })
     }).then((json) => {
         return json;
@@ -301,8 +309,10 @@ const getUserPositionsSpecificStockOrAll = (userId: number, stockSymbol: string 
 
                     }
                 })
+
+                connection.release();
+
             }
-            connection.release();
         })
     }).then((json) => {
         return json;
@@ -419,8 +429,10 @@ const getUserPositionsSpecificOptionOrAll = (userId: number, optionSymbol: strin
 
                     }
                 })
+
+                connection.release();
+
             }
-            connection.release();
         })
     }).then((json) => {
         return json;
@@ -474,9 +486,11 @@ const getAllUserStockTransactions = (userId: number, cleanSalesOrPurchases: stri
                         resolve({ http_id: 200, message: "Success", positions: results })
                     }
                 })
+
+                connection.release();
+
             }
 
-            connection.release();
         })
     }).then((json) => { return json })
         .catch((err) => { return err });
@@ -525,9 +539,11 @@ const getAllUserContractTransactions = (userId: number, cleanSalesOrPurchases: s
                         resolve({ http_id: 200, message: "Success", positions: results })
                     }
                 })
+
+                connection.release();
+
             }
 
-            connection.release();
         })
     }).then((json) => { return json })
         .catch((err) => { return err });
@@ -555,9 +571,11 @@ const setOptionToExpired = (userId: number, optionSymbol: string, optionPurchase
                         resolve({ http_id: 200, message: "Success" })
                     }
                 })
+
+                connection.release();
+
             }
 
-            connection.release();
         })
     }).then((json) => { return json })
         .catch((err) => { return err });

@@ -54,8 +54,10 @@ const registerUser = (username: string, password: string, email: string) => {
                     else resolve({ http_id: 200, message: "successful register" });
 
                 })
+
+                connection.release();
+
             }
-            connection.release();
         })
     })).then((json) => {
         return json;
@@ -89,9 +91,11 @@ const loginUserToken = (token: string) => {
                     else if (results[0].length != 1) reject({ http_id: 400, message: "Not logged in or bad token" });
                     else resolve({ http_id: 200, message: "User found", user: results[0] });
                 })
+
+                connection.release();
+
             }
 
-            connection.release();
         })
     }).then((result) => { return result })
         .catch((err) => { return err });
@@ -121,7 +125,10 @@ const loginUserNoToken = (username: string, password: string) => {
             if (error) reject({ http_id: 999, message: "Failed to get connection from pool" });
             else {
                 connection.query(query, username, (err, results, fields) => {
-                    if (err || results.length == 0) reject({ http_id: 400, message: "Wrong username or password" });
+                    if (err) reject({ http_id: 400, message: "Wrong username or password" });
+                    else if (results.length == 0) {
+                        reject({ http_id: 400, message: "Wrong username or password" })
+                    }
                     else {
 
                         let salt: string = results[0].salt;
@@ -144,9 +151,11 @@ const loginUserNoToken = (username: string, password: string) => {
                             reject({ http_id: 400, message: "Wrong username or password" });
                     }
                 })
+
+                connection.release();
+
             }
 
-            connection.release();
         })
     }).then((result) => { return result })
         .catch((err) => { return err })
@@ -175,9 +184,11 @@ const logoutUser = (token: string) => {
                     if (err) reject({ http_id: 400, message: "Failed to delete token" });
                     else resolve({ http_id: 200, message: "Token deleted successfully" });
                 })
+
+                connection.release();
+
             }
 
-            connection.release();
 
         })
     });
